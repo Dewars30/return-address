@@ -1,0 +1,128 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireCreator } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { validateAgentSpec, type AgentSpec } from "@/lib/agentSpec";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireCreator();
+    const agentId = params.id;
+
+    const agent = await db.agent.findUnique({
+      where: { id: agentId },
+      include: {
+        specs: {
+          where: { isActive: true },
+          take: 1,
+          orderBy: { version: "desc" },
+        },
+      },
+    });
+
+    if (!agent) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    // Ensure user owns this agent
+    if (agent.ownerId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Get user's Stripe account status
+    const userWithStripe = await db.user.findUnique({
+      where: { id: user.id },
+      select: { stripeAccountId: true },
+    });
+
+    const spec = agent.specs[0]?.spec as AgentSpec | null;
+
+    return NextResponse.json({
+      agent,
+      spec,
+      hasStripeAccount: !!userWithStripe?.stripeAccountId,
+    });
+  } catch (error) {
+    console.error("Get agent error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireCreator();
+    const agentId = params.id;
+    const body = await request.json();
+    const { spec } = body;
+
+    if (!spec) {
+      return NextResponse.json({ error: "Agent spec is required" }, { status: 400 });
+    }
+
+    // Validate AgentSpec
+    if (!validateAgentSpec(spec)) {
+      return NextResponse.json({ error: "Invalid agent specification" }, { status: 400 });
+    }
+
+    const agentSpec = spec as AgentSpec;
+
+    // Verify agent exists and user owns it
+    const agent = await db.agent.findUnique({
+      where: { id: agentId },
+      include: {
+        specs: {
+          where: { isActive: true },
+          take: 1,
+          orderBy: { version: "desc" },
+        },
+      },
+    });
+
+    if (!agent) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    if (agent.ownerId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Get current version
+    const currentSpec = agent.specs[0];
+    const nextVersion = currentSpec ? currentSpec.version + 1 : 1;
+
+    // Deactivate current spec
+    if (currentSpec) {
+      await db.agentSpec.update({
+        where: { id: currentSpec.id },
+        data: { isActive: false },
+      });
+    }
+
+    // Create new version
+    await db.agentSpec.create({
+      data: {
+        agentId,
+        version: nextVersion,
+        spec: agentSpec as any,
+        isActive: true,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Update agent error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+

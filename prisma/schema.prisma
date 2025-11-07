@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table - synced from auth provider
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  handle        String?  @unique // Creator handle (unique)
+  shortBio      String?  // Optional short bio
+  authProvider  String   // "clerk" or "supabase"
+  authId        String   @unique // External auth provider ID
+  isCreator     Boolean  @default(false)
+  stripeAccountId String? // Stripe Connect Express account ID
+  stripeCustomerId String? // Stripe customer ID for subscriptions
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  agents        Agent[]
+  subscriptions Subscription[]
+  messages      Message[]
+
+  @@map("users")
+}
+
+// Agents table
+model Agent {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  ownerId     String
+  status      String   @default("draft") // "draft", "published", "suspended"
+  isApproved  Boolean  @default(false) // Admin approval
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  specs       AgentSpec[]
+  subscriptions Subscription[]
+  messages    Message[]
+  knowledgeFiles AgentKnowledgeFile[]
+  knowledgeChunks AgentKnowledgeChunk[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@index([status])
+  @@map("agents")
+}
+
+// AgentSpec - stores the canonical AgentSpec JSON with versioning
+model AgentSpec {
+  id        String   @id @default(cuid())
+  agentId   String
+  version   Int      @default(1)
+  spec      Json     // The full AgentSpec JSON
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, version])
+  @@index([agentId, isActive])
+  @@map("agent_specs")
+}
+
+// Subscriptions - Stripe subscriptions per agent
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String
+  agentId         String
+  stripeSubscriptionId String @unique
+  stripeCustomerId String
+  status          String   // "active", "canceled", "past_due", etc.
+  currentPeriodEnd DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+// Messages - conversation messages with agents
+model Message {
+  id        String   @id @default(cuid())
+  userId    String?  // Nullable for anonymous users
+  callerId  String   // userId or anonId - used for limits/trials
+  agentId   String
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, callerId, createdAt])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// Usage logs - track API invocations and limits
+model UsageLog {
+  id        String   @id @default(cuid())
+  userId    String?  // Nullable for anonymous users
+  callerId  String   // userId or anonId - used for limits/trials
+  agentId   String
+  tokensUsed Int?
+  isTrial   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([agentId, callerId, createdAt])
+  @@index([createdAt])
+  @@map("usage_logs")
+}
+
+// Knowledge files uploaded for agents
+model AgentKnowledgeFile {
+  id          String   @id @default(cuid())
+  agentId     String
+  fileName    String
+  fileUrl     String   // S3-compatible storage URL
+  fileSize    Int?     // bytes
+  mimeType    String?
+  uploadedAt  DateTime @default(now())
+
+  // Relations
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  chunks      AgentKnowledgeChunk[]
+
+  @@index([agentId])
+  @@map("agent_knowledge_files")
+}
+
+// Knowledge chunks for RAG - with pgvector embeddings
+model AgentKnowledgeChunk {
+  id          String   @id @default(cuid())
+  agentId     String
+  fileId      String
+  content     String
+  embedding   Unsupported("vector(1536)")? // pgvector - adjust dimension as needed
+  metadata    Json?    // Additional metadata (chunk index, etc.)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  file        AgentKnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([fileId])
+  @@map("agent_knowledge_chunks")
+}
+

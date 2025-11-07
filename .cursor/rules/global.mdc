@@ -1,0 +1,152 @@
+---
+alwaysApply: true
+---
+# AGENT STUDIO – GLOBAL BUILD RULES
+
+You are helping implement AGENT STUDIO V0.
+
+AGENT STUDIO V0 SUMMARY
+- A monolithic web app where vetted creators:
+  - create an AI agent via a guided form,
+  - host it on our platform,
+  - charge a monthly subscription,
+  - and users can discover, trial, and subscribe.
+- We own:
+  - agent spec,
+  - runtime,
+  - marketplace UX,
+  - billing + payouts,
+  - trust and guardrails.
+- This is NOT an “agent OS”, NOT a visual DAG tool, NOT enterprise CX.
+
+CANONICAL SPEC
+- The single source of truth is AGENT-STUDIO-V0.md in the repo root.
+- Before generating or refactoring code:
+  - Read AGENT-STUDIO-V0.md.
+  - Align behavior and types with the AgentSpec defined there.
+- If any instruction conflicts with AGENT-STUDIO-V0.md, follow AGENT-STUDIO-V0.md.
+
+SCOPE (V0 ONLY)
+You may implement ONLY the following capabilities:
+
+1. Creator Onboarding
+   - Auth (Clerk or Supabase Auth; use what the project already chose).
+   - “Become a creator” flow.
+   - Connect Stripe Connect Express account.
+
+2. Agent Creation & Management
+   - A form-based wizard to define:
+     - name, description, category, avatar,
+     - problem statement,
+     - model config (from a small curated list),
+     - optional knowledge files upload,
+     - tone and behavior,
+     - guardrails/disclosures,
+     - subscription price (from preset options),
+     - basic limits (e.g. max messages/day).
+   - Persist this as an AgentSpec JSON in `agent_specs`.
+   - Support draft + publish/unpublish.
+
+3. Agent Runtime
+   - `/api/agents/[slug]/invoke`:
+     - validate agent is published,
+     - check subscription or free-trial allowance,
+     - load AgentSpec,
+     - optionally run vector search over that agent’s knowledge,
+     - build final prompt with system + behavior + guardrails + context,
+     - call LLM via internal `llmClient`,
+     - log messages + usage.
+   - Enforce daily message limits and trial limits.
+
+4. Marketplace
+   - Public list of published agents with filters by category.
+   - Agent detail page:
+     - description, price, creator attribution, disclaimers.
+     - “Try for free” (limited messages).
+     - “Subscribe” (Stripe Checkout).
+
+5. Payments
+   - Stripe + Stripe Connect (Express).
+   - Monthly subscription per agent.
+   - Platform fee (rev share) configurable.
+   - Webhooks to sync subscription status.
+   - No per-token billing to end users in V0.
+
+6. Analytics (Minimal)
+   - For each agent (creator view):
+     - active subscriber count,
+     - total messages over recent period,
+     - simple stats or a basic chart.
+
+7. Admin (Minimal)
+   - Internal-only ability to:
+     - view agents,
+     - approve/suspend agents.
+
+ARCHITECTURE CONSTRAINTS
+
+- Single monolithic app.
+- Stack:
+  - Next.js (App Router) + TypeScript.
+  - React + Tailwind.
+  - Postgres + Prisma.
+  - pgvector for embeddings.
+  - S3-compatible storage for knowledge files.
+  - Stripe for billing & payouts.
+- One LLM provider behind a thin `llmClient` abstraction.
+- Use Next.js Route Handlers for APIs.
+- Prefer clear, typed modules over clever abstractions.
+
+STRICT NON-GOALS (DO NOT IMPLEMENT IN V0)
+
+These are explicitly out of scope. Do NOT add them unless AGENT-STUDIO-V0.md is updated to include them.
+
+- No visual node/graph editor.
+- No multi-agent routing or agent-to-agent orchestration.
+- No arbitrary custom tool integrations or code execution by creators.
+- No BYO LLM keys for creators.
+- No fine-tuning pipelines.
+- No voice, phone, or realtime streaming beyond basic text streaming.
+- No native mobile apps.
+- No advanced org features (SSO, granular RBAC, multi-tenant org hierarchies).
+- No white-label / custom domains.
+- No marketplace for anonymous, unvetted bots.
+- No auto-deployment to Kubernetes or complex infra.
+- No hidden business logic outside the AgentSpec + documented code.
+
+CODING STYLE & BEHAVIOR
+
+- Readability over cleverness.
+- Strong TypeScript types, especially for AgentSpec and DB layer.
+- Keep functions small and focused.
+- Centralize:
+  - `db` client,
+  - `llmClient`,
+  - `stripe` integration,
+  - `auth` helpers,
+  - `rag` helpers (chunk + embed + query).
+- Always:
+  - use environment variables for secrets,
+  - handle error states explicitly,
+  - log meaningfully on server-side errors.
+- Before large changes:
+  - explain the plan in comments or commit message,
+  - avoid adding new dependencies without justification.
+
+MCP & TOOLING USAGE
+
+- May use MCPs that:
+  - inspect and edit local files,
+  - read Git history,
+  - fetch official docs (Next.js, Prisma, Stripe, LLM provider, etc.).
+- Do NOT:
+  - install or assume arbitrary side-effect-heavy MCPs,
+  - manage infra outside this repo,
+  - call unknown third-party APIs without explicit instructions.
+
+IF UNSURE
+
+- Default to the leanest implementation that:
+  - satisfies AGENT-STUDIO-V0.md,
+  - does not expand scope,
+  - keeps the monolith simple.
