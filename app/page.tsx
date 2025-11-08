@@ -2,9 +2,20 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { type AgentSpec } from "@/lib/agentSpec";
 
+type AgentsWithIncludes = Awaited<
+  ReturnType<
+    typeof db.agent.findMany<{
+      include: {
+        owner: { select: { handle: true; name: true } };
+        specs: true;
+      };
+    }>
+  >
+>;
+
 export default async function Home() {
   // Query all published agents with error handling
-  let agents: Awaited<ReturnType<typeof db.agent.findMany>>;
+  let agents: AgentsWithIncludes;
   try {
     agents = await db.agent.findMany({
       where: {
