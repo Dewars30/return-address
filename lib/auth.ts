@@ -5,60 +5,73 @@ import { db } from "./db";
 /**
  * Get the current authenticated user from Clerk
  * Returns null if not authenticated
+ * Gracefully handles cases where Clerk middleware hasn't run (e.g., static files, 404s)
  */
 export async function getCurrentUser() {
-  const { userId } = await auth();
-  if (!userId) return null;
+  try {
+    const { userId } = await auth();
+    if (!userId) return null;
 
-  const clerkUser = await currentUser();
-  if (!clerkUser) return null;
+    const clerkUser = await currentUser();
+    if (!clerkUser) return null;
 
-  // Sync user to database (preserve existing fields like stripeCustomerId)
-  const existingUser = await db.user.findUnique({
-    where: { authId: userId },
-    select: { stripeCustomerId: true, isCreator: true, stripeAccountId: true },
-  });
+    // Sync user to database (preserve existing fields like stripeCustomerId)
+    const existingUser = await db.user.findUnique({
+      where: { authId: userId },
+      select: { stripeCustomerId: true, isCreator: true, stripeAccountId: true },
+    });
 
-  const user = await db.user.upsert({
-    where: { authId: userId },
-    update: {
-      email: clerkUser.emailAddresses[0]?.emailAddress || "",
-      name: clerkUser.firstName && clerkUser.lastName
-        ? `${clerkUser.firstName} ${clerkUser.lastName}`
-        : clerkUser.firstName || clerkUser.username || null,
-      // Preserve existing fields
-      stripeCustomerId: existingUser?.stripeCustomerId,
-      isCreator: existingUser?.isCreator ?? false,
-      stripeAccountId: existingUser?.stripeAccountId,
-    },
-    create: {
-      email: clerkUser.emailAddresses[0]?.emailAddress || "",
-      name: clerkUser.firstName && clerkUser.lastName
-        ? `${clerkUser.firstName} ${clerkUser.lastName}`
-        : clerkUser.firstName || clerkUser.username || null,
-      authProvider: "clerk",
-      authId: userId,
-      isCreator: false,
-    },
-  });
+    const user = await db.user.upsert({
+      where: { authId: userId },
+      update: {
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : clerkUser.firstName || clerkUser.username || null,
+        // Preserve existing fields
+        stripeCustomerId: existingUser?.stripeCustomerId,
+        isCreator: existingUser?.isCreator ?? false,
+        stripeAccountId: existingUser?.stripeAccountId,
+      },
+      create: {
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : clerkUser.firstName || clerkUser.username || null,
+        authProvider: "clerk",
+        authId: userId,
+        isCreator: false,
+      },
+    });
 
-  return user;
+    return user;
+  } catch (error) {
+    // Clerk middleware not initialized (e.g., static files, 404s, or middleware matcher excludes route)
+    // Return null to gracefully handle unauthenticated state
+    return null;
+  }
 }
 
 /**
  * Require authentication - redirects to sign-in if not authenticated
+ * Gracefully handles cases where Clerk middleware hasn't run
  */
 export async function requireAuth() {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      redirect("/sign-in");
+    }
 
-  const user = await getCurrentUser();
-  if (!user) {
+    const user = await getCurrentUser();
+    if (!user) {
+      redirect("/sign-in");
+    }
+    return user;
+  } catch (error) {
+    // Clerk middleware not initialized - redirect to sign-in
     redirect("/sign-in");
   }
-  return user;
 }
 
 /**

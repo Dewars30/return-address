@@ -12,3 +12,17 @@ export const db =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 
+/**
+ * Test database connection
+ * Returns true if connection is successful, false otherwise
+ */
+export async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    return false;
+  }
+}
+

@@ -3,32 +3,39 @@ import Link from "next/link";
 import { type AgentSpec } from "@/lib/agentSpec";
 
 export default async function Home() {
-  // Query all published agents
-  const agents = await db.agent.findMany({
-    where: {
-      status: "published",
-    },
-    include: {
-      owner: {
-        select: {
-          handle: true,
-          name: true,
+  // Query all published agents with error handling
+  let agents;
+  try {
+    agents = await db.agent.findMany({
+      where: {
+        status: "published",
+      },
+      include: {
+        owner: {
+          select: {
+            handle: true,
+            name: true,
+          },
+        },
+        specs: {
+          where: {
+            isActive: true,
+          },
+          take: 1,
+          orderBy: {
+            version: "desc",
+          },
         },
       },
-      specs: {
-        where: {
-          isActive: true,
-        },
-        take: 1,
-        orderBy: {
-          version: "desc",
-        },
+      orderBy: {
+        createdAt: "desc",
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Database error loading agents:", error);
+    // Return empty state on database error
+    agents = [];
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
