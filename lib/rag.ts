@@ -4,6 +4,7 @@
  */
 
 import { db } from "./db";
+import { Prisma } from "@prisma/client";
 
 export type ChunkMetadata = {
   chunkIndex?: number;
@@ -57,7 +58,7 @@ export async function storeKnowledgeChunks(
         agentId,
         fileId,
         content: chunk.content,
-        metadata: chunk.metadata || {},
+        metadata: (chunk.metadata || {}) as Prisma.InputJsonValue,
         // embedding will be added when embedding generation is implemented
       },
     });
