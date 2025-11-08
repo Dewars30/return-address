@@ -7,7 +7,11 @@ export default async function AdminAgentsPage() {
   const admin = await requireAdmin();
 
   // Get all agents with owner info
-  let agents;
+  let agents: Awaited<ReturnType<typeof db.agent.findMany<{
+    include: {
+      owner: { select: { handle: true; name: true; email: true } };
+    };
+  }>>>;
   try {
     agents = await db.agent.findMany({
       include: {
