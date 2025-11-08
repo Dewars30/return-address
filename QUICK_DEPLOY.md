@@ -43,7 +43,7 @@ ADMIN_EMAILS=your-email@example.com
 PLATFORM_FEE_BPS=500
 ```
 
-⚠️ **Important**: 
+⚠️ **Important**:
 - Use **production keys** for Clerk and Stripe
 - Set `NEXT_PUBLIC_APP_URL=https://returnaddress.io`
 - Redeploy after adding variables
@@ -64,7 +64,7 @@ PLATFORM_FEE_BPS=500
 1. Go to **Stripe Dashboard → Webhooks**
 2. Click **"Add endpoint"**
 3. **URL**: `https://returnaddress.io/api/stripe/webhook`
-4. **Events**: 
+4. **Events**:
    - `checkout.session.completed`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
