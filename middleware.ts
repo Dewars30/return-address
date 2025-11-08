@@ -28,10 +28,9 @@ export default clerkMiddleware((auth, req) => {
 });
 
 export const config = {
+  // Run on all routes except Next internals & static assets
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
+    "/((?!_next|.*\\..*).*)",
     "/(api|trpc)(.*)",
   ],
 };
