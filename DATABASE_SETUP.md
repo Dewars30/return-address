@@ -115,7 +115,7 @@ datasource db {
 
 **Cause**: Wrong connection string format or region mismatch
 
-**Solution**: 
+**Solution**:
 - Verify you're using the **Session mode** connection string from Supabase
 - Check that the region matches your Supabase project region
 - Ensure `?pgbouncer=true` parameter is included
@@ -124,7 +124,7 @@ datasource db {
 
 **Cause**: Using direct connection (port 5432) in serverless environment
 
-**Solution**: 
+**Solution**:
 - Switch to connection pooler (port 6543) for `DATABASE_URL`
 - Keep direct connection (port 5432) only for `DIRECT_URL` (migrations)
 
@@ -148,7 +148,7 @@ postgresql://postgres:your-password-here@db.lhcpemvphloxrjrcuoza.supabase.co:543
 
 After setting environment variables:
 
-1. **Check Vercel Logs**: 
+1. **Check Vercel Logs**:
    - Go to Vercel Dashboard → Your Project → Deployments → Latest → Functions
    - Look for database connection errors
 
@@ -172,6 +172,6 @@ After setting environment variables:
 
 ---
 
-**Last Updated**: After fixing database connection issues  
+**Last Updated**: After fixing database connection issues
 **Status**: Ready for configuration
 
