@@ -21,8 +21,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
+  
   return (
-    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider 
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      afterSignInUrl={appUrl}
+      afterSignUpUrl={appUrl}
+    >
       <html lang="en">
         <body className={inter.className}>
           <ErrorBoundary>
