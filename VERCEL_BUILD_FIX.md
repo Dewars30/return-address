@@ -76,8 +76,8 @@ Ensure all variables from `vercel-env-production.txt` are set in Vercel:
 **Fix**:
 ```bash
 # Using nvm (recommended)
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
 
 # Or install Node 22 directly
 # Then verify
