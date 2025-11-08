@@ -4,7 +4,7 @@ import { type AgentSpec } from "@/lib/agentSpec";
 
 export default async function Home() {
   // Query all published agents with error handling
-  let agents;
+  let agents: Awaited<ReturnType<typeof db.agent.findMany>>;
   try {
     agents = await db.agent.findMany({
       where: {
