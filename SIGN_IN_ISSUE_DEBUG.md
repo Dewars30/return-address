@@ -18,11 +18,11 @@ The sign-in feature is non-responsive on `returnaddress.io` because **Clerk is u
    - ❌ Local development instance
    - ✅ Should redirect to production Clerk instance
 
-4. **Console Warnings**: 
+4. **Console Warnings**:
    - "Clerk has been loaded with development keys"
    - "Development instances have strict usage limits"
 
-5. **CORS Errors**: 
+5. **CORS Errors**:
    - Development instance doesn't allow `returnaddress.io` domain
    - Blocks authentication requests
 
@@ -60,7 +60,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...  # Production key (not pk_test_)
 CLERK_SECRET_KEY=sk_live_...                    # Production key (not sk_test_)
 ```
 
-**Important**: 
+**Important**:
 - Ensure keys start with `pk_live_` and `sk_live_` (not `pk_test_` or `sk_test_`)
 - Set for **Production** environment
 - Optionally set for Preview/Development if needed

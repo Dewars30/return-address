@@ -7,23 +7,29 @@ export default async function AdminAgentsPage() {
   const admin = await requireAdmin();
 
   // Get all agents with owner info
-  const agents = await db.agent.findMany({
-    include: {
-      owner: {
-        select: {
-          handle: true,
-          name: true,
-          email: true,
+  let agents;
+  try {
+    agents = await db.agent.findMany({
+      include: {
+        owner: {
+          select: {
+            handle: true,
+            name: true,
+            email: true,
+          },
+        },
+        specs: {
+          where: { isActive: true },
+          take: 1,
+          orderBy: { version: "desc" },
         },
       },
-      specs: {
-        where: { isActive: true },
-        take: 1,
-        orderBy: { version: "desc" },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error) {
+    console.error("Database error loading agents:", error);
+    agents = [];
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

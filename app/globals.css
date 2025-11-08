@@ -2,3 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix Clerk modal backdrop blocking navigation */
+.cl-modalBackdrop {
+  pointer-events: auto !important;
+}
+
+/* Ensure navigation links are clickable when modal is open */
+nav a,
+nav button {
+  position: relative;
+  z-index: 1000;
+}
+

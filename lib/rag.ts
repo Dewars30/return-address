@@ -88,23 +88,29 @@ export async function getRelevantChunks(
   query: string,
   topK: number = 5
 ): Promise<string[]> {
-  // For V0: Simple text-based search (no vector embeddings yet)
-  // Search chunks that contain query terms
-  // For V0: Simple text-based search (case-insensitive)
-  const chunks = await db.agentKnowledgeChunk.findMany({
-    where: {
-      agentId,
-      content: {
-        contains: query,
-        mode: "insensitive",
+  try {
+    // For V0: Simple text-based search (no vector embeddings yet)
+    // Search chunks that contain query terms
+    // For V0: Simple text-based search (case-insensitive)
+    const chunks = await db.agentKnowledgeChunk.findMany({
+      where: {
+        agentId,
+        content: {
+          contains: query,
+          mode: "insensitive",
+        },
       },
-    },
-    take: topK,
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      take: topK,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-  return chunks.map((chunk) => chunk.content);
+    return chunks.map((chunk) => chunk.content);
+  } catch (error) {
+    console.error("Error fetching relevant chunks:", error);
+    // Return empty array on error - RAG is optional
+    return [];
+  }
 }
 

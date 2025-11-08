@@ -6,25 +6,33 @@ import StripeConnectButton from "./StripeConnectButton";
 export default async function CreatorAgentsPage() {
   const user = await requireCreator();
 
-  // Get user with stripeAccountId
-  const userWithStripe = await db.user.findUnique({
-    where: { id: user.id },
-    select: { stripeAccountId: true },
-  });
+  let userWithStripe;
+  let hasStripeAccount = false;
+  let agents = [];
 
-  const hasStripeAccount = !!userWithStripe?.stripeAccountId;
+  try {
+    // Get user with stripeAccountId
+    userWithStripe = await db.user.findUnique({
+      where: { id: user.id },
+      select: { stripeAccountId: true },
+    });
 
-  // Get user's agents
-  const agents = await db.agent.findMany({
-    where: { ownerId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      specs: {
-        where: { isActive: true },
-        take: 1,
+    hasStripeAccount = !!userWithStripe?.stripeAccountId;
+
+    // Get user's agents
+    agents = await db.agent.findMany({
+      where: { ownerId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        specs: {
+          where: { isActive: true },
+          take: 1,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Database error loading creator dashboard:", error);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -10,39 +10,40 @@ export default async function AgentDetailPage({
 }) {
   const slug = params.slug;
 
-  // Load agent with active spec and creator (exclude suspended)
-  const agent = await db.agent.findFirst({
-    where: {
-      slug,
-      status: "published", // Only published agents, not suspended
-    },
-    include: {
-      owner: {
-        select: {
-          handle: true,
-          name: true,
+  try {
+    // Load agent with active spec and creator (exclude suspended)
+    const agent = await db.agent.findFirst({
+      where: {
+        slug,
+        status: "published", // Only published agents, not suspended
+      },
+      include: {
+        owner: {
+          select: {
+            handle: true,
+            name: true,
+          },
+        },
+        specs: {
+          where: {
+            isActive: true,
+          },
+          take: 1,
+          orderBy: {
+            version: "desc",
+          },
         },
       },
-      specs: {
-        where: {
-          isActive: true,
-        },
-        take: 1,
-        orderBy: {
-          version: "desc",
-        },
-      },
-    },
-  });
+    });
 
-  if (!agent) {
-    notFound();
-  }
+    if (!agent) {
+      notFound();
+    }
 
-  const spec = agent.specs[0]?.spec as AgentSpec | undefined;
-  if (!spec) {
-    notFound();
-  }
+    const spec = agent.specs[0]?.spec as AgentSpec | undefined;
+    if (!spec) {
+      notFound();
+    }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -103,6 +104,10 @@ export default async function AgentDetailPage({
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error("Error loading agent:", error);
+    notFound();
+  }
 }
 
