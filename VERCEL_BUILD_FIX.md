@@ -18,12 +18,12 @@
 ```json
 {
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   }
 }
 ```
 
-**Why**: Next.js 14.2.5 is optimized for Node 18.x. Node 22 can cause compatibility issues.
+**Why**: Vercel requires Node.js 22.x (Node 18.x is discontinued). Next.js 14.2.5 is compatible with Node 22.
 
 ### 3. Next.js Config (Verified)
 ```js
