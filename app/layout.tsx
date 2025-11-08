@@ -20,15 +20,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Extract domain from NEXT_PUBLIC_APP_URL for Clerk
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
-  const domain = appUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-
   return (
-    <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      domain={domain}
-    >
+    <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
           <Nav />
