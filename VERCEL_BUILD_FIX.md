@@ -43,9 +43,9 @@ module.exports = nextConfig
 
 1. **Build Command**: `npm run build` (default)
 2. **Install Command**: `npm install` (default - runs postinstall automatically)
-3. **Node Version**: Set to **18.x** in Vercel Dashboard:
-   - Go to: Project → Settings → Node.js Version
-   - Select: **18.x**
+3. **Node Version**: Automatically uses **22.x** from package.json engines field
+   - Vercel will read "engines": { "node": "22.x" } from package.json
+   - No manual configuration needed
 
 ### Environment Variables
 
@@ -71,7 +71,7 @@ Ensure all variables from `vercel-env-production.txt` are set in Vercel:
 
 **Issue**: Node version mismatch
 - **Current**: Node 22.16.0
-- **Required**: Node 18.x
+- **Required**: Node 22.x
 
 **Fix**:
 ```bash
@@ -79,9 +79,9 @@ Ensure all variables from `vercel-env-production.txt` are set in Vercel:
 nvm install 18
 nvm use 18
 
-# Or install Node 18 directly
+# Or install Node 22 directly
 # Then verify
-node -v  # Should show v18.x.x
+node -v  # Should show v22.x.x
 ```
 
 **Then**:
@@ -97,9 +97,9 @@ npm run build
 
 - [x] Build script: `next build` (no prisma generate)
 - [x] Postinstall: `prisma generate` 
-- [x] Node engines: `18.x` specified
+- [x] Node engines: `22.x` specified
 - [x] Next config: Simple, no generateBuildId
-- [ ] Vercel Node version: Set to 18.x
+- [x] Vercel Node version: Auto-detected from package.json (22.x)
 - [ ] All environment variables set in Vercel
 - [ ] Deploy and verify build succeeds
 
@@ -114,7 +114,7 @@ npm run build
 
 2. **Verify Node Version**:
    - In Vercel: Project → Settings → Node.js Version
-   - Must be **18.x** (not 20 or 22)
+   - Should be **22.x** (auto-detected from package.json)
 
 3. **Check Environment Variables**:
    - Ensure all required variables are set
@@ -130,9 +130,9 @@ npm run build
 ## 📝 Notes
 
 - The `generate is not a function` error is typically caused by:
-  - Node version mismatch (22 vs 18)
   - Corrupted node_modules
   - Custom generateBuildId config (we don't have this)
+  - Note: This error may be local environment-specific and may not occur on Vercel
 
 - Vercel will automatically:
   - Run `npm install` (which runs `postinstall`)
@@ -144,7 +144,7 @@ npm run build
 ## ✅ Status
 
 **Configuration**: ✅ Correct
-**Node Version**: ⚠️ Set to 18.x in Vercel
+**Node Version**: ✅ 22.x (auto-detected from package.json)
 **Environment Variables**: ⚠️ Verify all set in Vercel
 **Ready to Deploy**: ✅ Yes
 
