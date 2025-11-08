@@ -17,7 +17,7 @@ export function getStripeClient(): Stripe {
       throw new Error("STRIPE_SECRET_KEY environment variable is not set");
     }
     stripeClient = new Stripe(secretKey, {
-      apiVersion: "2024-11-20.acacia",
+      apiVersion: "2023-10-16", // Use stable API version supported by Stripe SDK
       typescript: true,
     });
   }
