@@ -10,6 +10,7 @@ export default async function AdminAgentsPage() {
   let agents: Awaited<ReturnType<typeof db.agent.findMany<{
     include: {
       owner: { select: { handle: true; name: true; email: true } };
+      specs: true;
     };
   }>>>;
   try {
