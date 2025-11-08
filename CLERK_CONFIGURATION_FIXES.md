@@ -12,19 +12,24 @@ Clerk's `accounts.returnaddress.io` subdomain is not properly configured to allo
 
 1. **Verify DNS Records in Vercel**
    - Go to Vercel Dashboard → Your Project → Settings → Domains
+   - Click on `returnaddress.io` (NOT `accounts.returnaddress.io` - that's a subdomain)
    - Ensure these CNAME records exist for `returnaddress.io`:
-     - `accounts` → `accounts.clerk.services`
-     - `clerk` → `frontend-api.clerk.services`
+     - `clerk` → `frontend-api.clerk.services` (for Clerk frontend API)
      - `clkmail` → `mail.fva681yz9zbt.clerk.services` (your exact value)
      - `clk._domainkey` → `dkim1.fva681yz9zbt.clerk.services`
      - `clk2._domainkey` → `dkim2.fva681yz9zbt.clerk.services`
+   - **Note:** You may have `accounts` → `4b19958f2de6ed10.vercel-dns-017.com.` for Vercel verification
+   - **Important:** You cannot have two CNAME records with the same name. If `accounts` is used for Vercel verification, configure Clerk to use `clerk.returnaddress.io` for frontend API instead.
 
 2. **Configure Domain in Clerk Dashboard**
    - Go to [Clerk Dashboard](https://dashboard.clerk.com)
    - Select your application
    - Go to **Domains** section
-   - Ensure `returnaddress.io` is added and verified
-   - Ensure `accounts.returnaddress.io` is configured as the account portal domain
+   - Add `returnaddress.io` as a custom domain (NOT `accounts.returnaddress.io` - that's a subdomain)
+   - Configure frontend API to use `clerk.returnaddress.io` (subdomain you created)
+   - **Note:** If `accounts` CNAME is used for Vercel verification, you may need to:
+     - Use Clerk's default account portal domain, OR
+     - Configure a different subdomain (e.g., `auth.returnaddress.io`) for account portal
    - Verify the domain shows as "Active" or "Verified"
 
 3. **Check CORS Settings**
