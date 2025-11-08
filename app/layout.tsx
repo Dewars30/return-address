@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Return Address",
   description:
     "Return Address is the platform for expert-owned, high-signal AI agents with clear provenance, enforced guardrails, and direct revenue for their creators.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -17,8 +20,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Extract domain from NEXT_PUBLIC_APP_URL for Clerk
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
+  const domain = appUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      domain={domain}
+    >
       <html lang="en">
         <body className={inter.className}>
           <Nav />
@@ -28,4 +38,3 @@ export default function RootLayout({
     </ClerkProvider>
   );
 }
-
