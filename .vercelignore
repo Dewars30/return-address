@@ -1,0 +1,19 @@
+# Ignore local development files
+.env
+.env.local
+.env*.local
+
+# Ignore documentation that's not needed in production
+*.md
+!README.md
+
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Ignore development tools
+.cursor
+.vscode
+.idea
