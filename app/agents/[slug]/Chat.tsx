@@ -42,7 +42,7 @@ export default function Chat({ agentSlug }: { agentSlug: string }) {
       if (!response.ok) {
         if (response.status === 402 && data.error === "subscription_required") {
           setSubscriptionRequired(true);
-          setError("You've used all your free trial messages. Subscribe to continue.");
+          setError("You&apos;ve used all your free trial messages. Subscribe to continue.");
         } else if (response.status === 429) {
           setError("Daily message limit reached. Please try again tomorrow.");
         } else {
@@ -111,7 +111,7 @@ export default function Chat({ agentSlug }: { agentSlug: string }) {
       {subscriptionRequired && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
           <p className="text-sm text-blue-800 mb-3">
-            You've used all your free trial messages. Subscribe to continue chatting.
+            You&apos;ve used all your free trial messages. Subscribe to continue chatting.
           </p>
           <SubscribeButton agentSlug={agentSlug} />
         </div>

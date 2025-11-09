@@ -104,7 +104,7 @@ export default async function AgentDetailPage({
         </div>
       </div>
     </div>
-    );
+  );
   } catch (error) {
     console.error("Error loading agent:", error);
     notFound();
