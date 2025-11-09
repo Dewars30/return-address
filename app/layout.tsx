@@ -12,9 +12,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
 export const metadata: Metadata = {
   title: "Return Address",
   description:
@@ -23,6 +20,9 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
   },
 };
+
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export default function RootLayout({
   children,
