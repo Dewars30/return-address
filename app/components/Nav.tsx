@@ -49,7 +49,7 @@ export default async function Nav() {
                 <UserButton afterSignOutUrl="/" />
               </>
             ) : (
-              <SignInButton 
+              <SignInButton
                 mode="modal"
                 forceRedirectUrl={false}
               >
