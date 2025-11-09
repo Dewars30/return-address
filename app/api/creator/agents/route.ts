@@ -20,7 +20,18 @@ function generateSlug(name: string, userId: string): string {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireCreator();
-    const body = await request.json();
+
+    // Parse request body safely
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
     const { spec } = body;
 
     if (!spec) {
@@ -65,9 +76,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ agentId: agent.id });
+    return NextResponse.json({ agentId: agent.id }, { status: 201 });
   } catch (error) {
     console.error("Create agent error:", error);
+
+    // Handle Prisma errors (e.g., unique constraint violations)
+    if (error && typeof error === "object" && "code" in error) {
+      const prismaError = error as { code: string; message?: string };
+      if (prismaError.code === "P2002") {
+        return NextResponse.json(
+          { error: "Agent with this slug already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Handle validation errors (should already be caught above, but just in case)
+    if (error instanceof Error && error.message.includes("Invalid")) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    // All other errors are internal server errors
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
