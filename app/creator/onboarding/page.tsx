@@ -43,7 +43,8 @@ export default function CreatorOnboardingPage() {
         throw new Error(data.error || "Failed to complete onboarding");
       }
 
-      router.push("/creator/agents");
+      // Use window.location.href to force full page reload and ensure server gets fresh data
+      window.location.href = "/creator/agents";
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
