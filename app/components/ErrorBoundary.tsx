@@ -5,7 +5,6 @@ import React from "react";
 type ErrorBoundaryState = {
   hasError: boolean;
   error?: Error;
-  nextRedirectError?: any;
 };
 
 type ErrorBoundaryProps = {
@@ -44,9 +43,10 @@ export class ErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // For Next.js redirect/not-found errors, store them to rethrow in render
+    // Don't catch Next.js redirect/not-found errors - let them bubble up
+    // Returning { hasError: false } prevents ErrorBoundary from catching it
     if (isNextSpecialError(error)) {
-      return { hasError: true, error, nextRedirectError: error };
+      return { hasError: false };
     }
     // Don't catch Clerk component errors - they handle their own errors
     if (isClerkError(error)) {
@@ -64,11 +64,6 @@ export class ErrorBoundary extends React.Component<
   }
 
   render() {
-    // If we have a Next.js redirect error, rethrow it so Next.js can handle it
-    if (this.state.nextRedirectError) {
-      throw this.state.nextRedirectError;
-    }
-
     if (this.state.hasError && this.state.error) {
       return (
         <div className="w-full border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
