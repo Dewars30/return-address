@@ -41,3 +41,4 @@ next-env.d.ts
 .cursor/mcp.json
 vercel-env-production.txt
 ENV_UPLOAD_GUIDE.md
+.env.vercel
