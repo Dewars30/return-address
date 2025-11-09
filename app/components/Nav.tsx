@@ -1,11 +1,10 @@
-import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+"use client";
 
-export default async function Nav() {
-  const user = await getCurrentUser();
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
-  const isAdmin = user && adminEmails.includes(user.email);
+import Link from "next/link";
+import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+
+export default function Nav() {
+  const { isSignedIn } = useUser();
 
   return (
     <nav className="border-b border-gray-200 bg-white">
@@ -21,31 +20,14 @@ export default async function Nav() {
             >
               Marketplace
             </Link>
-            {user ? (
+            {isSignedIn ? (
               <>
-                {isAdmin && (
-                  <Link
-                    href="/admin/agents"
-                    className="text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    Admin
-                  </Link>
-                )}
-                {user.isCreator ? (
-                  <Link
-                    href="/creator/agents"
-                    className="text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    Creator dashboard
-                  </Link>
-                ) : (
-                  <Link
-                    href="/creator/onboarding"
-                    className="text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    Become a creator
-                  </Link>
-                )}
+                <Link
+                  href="/creator/agents"
+                  className="text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Creator dashboard
+                </Link>
                 <UserButton afterSignOutUrl="/" />
               </>
             ) : (

@@ -2,67 +2,73 @@
 
 import React from "react";
 
-interface ErrorBoundaryState {
+type ErrorBoundaryState = {
   hasError: boolean;
-  error: Error | null;
-}
+  error?: Error;
+};
 
-interface ErrorBoundaryProps {
+type ErrorBoundaryProps = {
   children: React.ReactNode;
-  fallback?: React.ReactNode;
+};
+
+function isNextSpecialError(error: any): boolean {
+  const digest = error?.digest;
+  if (typeof digest !== "string") return false;
+
+  return (
+    digest.startsWith("NEXT_REDIRECT") ||
+    digest.startsWith("NEXT_NOT_FOUND")
+  );
 }
 
-class ErrorBoundaryClass extends React.Component<
+function isClerkError(error: any): boolean {
+  // Don't catch errors from Clerk components - they handle their own errors
+  const stack = error?.stack || "";
+  const message = error?.message || "";
+  return (
+    stack.includes("@clerk") ||
+    stack.includes("clerk") ||
+    message.includes("clerk") ||
+    message.includes("Clerk")
+  );
+}
+
+export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Don't catch Next.js redirect/not-found errors - let them bubble up
+    if (isNextSpecialError(error)) {
+      return { hasError: false };
+    }
+    // Don't catch Clerk component errors - they handle their own errors
+    if (isClerkError(error)) {
+      return { hasError: false };
+    }
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  componentDidCatch(error: any, errorInfo: any) {
+    // If we somehow catch a Next.js special error here, don't log it
+    if (isNextSpecialError(error) || isClerkError(error)) {
+      return;
+    }
+    console.error("ErrorBoundary caught error:", error, errorInfo);
   }
 
   render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
+    if (this.state.hasError && this.state.error) {
       return (
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto bg-white border border-red-200 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-800 mb-4">
-              Something went wrong
-            </h2>
-            <p className="text-gray-700 mb-4">
-              We encountered an unexpected error. Please try refreshing the page.
-            </p>
-            {process.env.NODE_ENV === "development" && this.state.error && (
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm text-gray-600">
-                  Error details (development only)
-                </summary>
-                <pre className="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto">
-                  {this.state.error.toString()}
-                </pre>
-              </details>
-            )}
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Reload Page
-            </button>
+        <div className="w-full border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="font-semibold">Something went wrong.</div>
+          <div className="mt-1 break-all">
+            {this.state.error.message || "An unexpected error occurred."}
           </div>
         </div>
       );
@@ -71,6 +77,3 @@ class ErrorBoundaryClass extends React.Component<
     return this.props.children;
   }
 }
-
-export const ErrorBoundary = ErrorBoundaryClass;
-
