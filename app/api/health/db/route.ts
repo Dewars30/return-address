@@ -7,8 +7,9 @@ import { db } from "@/lib/db";
  */
 export async function GET(request: NextRequest) {
   try {
-    // Test database connection with simple query
-    await db.$queryRaw`SELECT 1`;
+    // Test database connection using $queryRawUnsafe to avoid prepared statements
+    // This works with connection poolers (PgBouncer) that don't support prepared statements
+    await db.$queryRawUnsafe("SELECT 1");
 
     return NextResponse.json({
       status: "ok",
