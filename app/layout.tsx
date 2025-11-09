@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
+
 import { Inter } from "next/font/google";
+
 import { ClerkProvider } from "@clerk/nextjs";
+
 import "./globals.css";
+
 import Nav from "./components/Nav";
+
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
 const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
+  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Return Address",
@@ -27,8 +32,6 @@ export default function RootLayout({
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      // Let Clerk handle returnBackUrl / last URL.
-      // Only set afterSignIn/Up if needed, and only to appUrl.
       afterSignInUrl={appUrl}
       afterSignUpUrl={appUrl}
     >
@@ -36,7 +39,7 @@ export default function RootLayout({
         <body className={inter.className}>
           <ErrorBoundary>
             <Nav />
-            <main>{children}</main>
+            {children}
           </ErrorBoundary>
         </body>
       </html>
