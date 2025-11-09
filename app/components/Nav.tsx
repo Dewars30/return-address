@@ -49,7 +49,10 @@ export default async function Nav() {
                 <UserButton afterSignOutUrl="/" />
               </>
             ) : (
-              <SignInButton mode="modal">
+              <SignInButton 
+                mode="modal"
+                forceRedirectUrl={false}
+              >
                 <button className="text-gray-700 hover:text-gray-900 transition-colors">
                   Sign in
                 </button>

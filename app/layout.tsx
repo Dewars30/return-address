@@ -22,10 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
-  
+
   return (
-    <ClerkProvider 
+    <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
       afterSignInUrl={appUrl}
       afterSignUpUrl={appUrl}
     >
