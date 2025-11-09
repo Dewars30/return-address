@@ -7,6 +7,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
+
 export const metadata: Metadata = {
   title: "Return Address",
   description:
@@ -18,16 +21,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io";
-
+}) {
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
+      // Let Clerk handle returnBackUrl / last URL.
+      // Only set afterSignIn/Up if needed, and only to appUrl.
       afterSignInUrl={appUrl}
       afterSignUpUrl={appUrl}
     >
