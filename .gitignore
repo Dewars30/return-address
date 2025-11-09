@@ -38,7 +38,13 @@ next-env.d.ts
 # prisma
 /prisma/migrations
 
+# cursor
 .cursor/mcp.json
+
+# sensitive files (should not be committed)
 vercel-env-production.txt
-ENV_UPLOAD_GUIDE.md
 .env.vercel
+ENV_UPLOAD_GUIDE.md
+
+# build artifacts
+tsconfig.tsbuildinfo

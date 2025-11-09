@@ -7,7 +7,7 @@ After a full day of debugging, we've identified the root causes and created an a
 ## 🔍 Root Cause Analysis
 
 ### Issue 1: Database Connection Failure (CRITICAL)
-**Root Cause:** 
+**Root Cause:**
 - `DATABASE_URL` was only set for Development environment
 - Production and Preview environments were missing database connection strings
 - Connection string format was correct, but variables weren't set for all environments

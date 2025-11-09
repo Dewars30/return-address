@@ -18,7 +18,7 @@ Error: `FATAL: Tenant or user not found`
 
 ### Step 2: Construct Correct Connection Strings
 
-**Project Reference:** `lhcpemvphloxrjrcuoza`  
+**Project Reference:** `lhcpemvphloxrjrcuoza`
 **Region:** `us-west-1` (verify in Supabase Dashboard → Settings → Infrastructure)
 
 **DATABASE_URL** (Connection Pooler - Port 6543):
@@ -31,7 +31,7 @@ postgresql://postgres.lhcpemvphloxrjrcuoza:[YOUR-PASSWORD]@aws-0-us-west-1.poole
 postgresql://postgres.lhcpemvphloxrjrcuoza:[YOUR-PASSWORD]@db.lhcpemvphloxrjrcuoza.supabase.co:5432/postgres
 ```
 
-**Important:** 
+**Important:**
 - Replace `[YOUR-PASSWORD]` with your actual password
 - If password has special characters, URL-encode them:
   - `@` → `%40`
@@ -48,7 +48,7 @@ Run these commands (replace `[YOUR-PASSWORD]` with actual password):
 vercel env rm DATABASE_URL production --yes
 echo "postgresql://postgres.lhcpemvphloxrjrcuoza:[YOUR-PASSWORD]@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true" | vercel env add DATABASE_URL production
 
-# Update DIRECT_URL  
+# Update DIRECT_URL
 vercel env rm DIRECT_URL production --yes
 echo "postgresql://postgres.lhcpemvphloxrjrcuoza:[YOUR-PASSWORD]@db.lhcpemvphloxrjrcuoza.supabase.co:5432/postgres" | vercel env add DIRECT_URL production
 

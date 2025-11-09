@@ -56,7 +56,7 @@ NEXT_PUBLIC_APP_URL=https://returnaddress.io
 
 **Fix:** Add explicit redirect URLs:
 ```tsx
-<ClerkProvider 
+<ClerkProvider
   publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
   afterSignInUrl="/"
   afterSignUpUrl="/"
@@ -86,7 +86,7 @@ NEXT_PUBLIC_APP_URL=https://returnaddress.io
 Update `app/layout.tsx`:
 
 ```tsx
-<ClerkProvider 
+<ClerkProvider
   publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
   afterSignInUrl={process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io"}
   afterSignUpUrl={process.env.NEXT_PUBLIC_APP_URL || "https://returnaddress.io"}

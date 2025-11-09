@@ -27,27 +27,27 @@ Since the Vercel CLI uses an interactive format that's difficult to script, plea
    - Or delete all and recreate
 
 3. **Add Records Correctly** (one by one)
-   
+
    **Record 1:**
    - Type: `CNAME`
    - Name: `clerk` (just "clerk", not "clerk.returnaddress.io")
    - Value: `frontend-api.clerk.services` (no trailing dot)
-   
+
    **Record 2:**
    - Type: `CNAME`
    - Name: `accounts`
    - Value: `accounts.clerk.services`
-   
+
    **Record 3:**
    - Type: `CNAME`
    - Name: `clkmail`
    - Value: `mail.fva681yz9zbt.clerk.services`
-   
+
    **Record 4:**
    - Type: `CNAME`
    - Name: `clk._domainkey`
    - Value: `dkim1.fva681yz9zbt.clerk.services`
-   
+
    **Record 5:**
    - Type: `CNAME`
    - Name: `clk2._domainkey`

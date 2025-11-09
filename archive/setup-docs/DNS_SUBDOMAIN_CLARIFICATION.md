@@ -34,7 +34,7 @@ There are actually **TWO different CNAME records** needed for `accounts`:
 
 ## ⚠️ Problem: Can't Have Two CNAME Records with Same Name
 
-You **cannot** have two CNAME records with the same name (`accounts`). 
+You **cannot** have two CNAME records with the same name (`accounts`).
 
 ### Solution Options:
 

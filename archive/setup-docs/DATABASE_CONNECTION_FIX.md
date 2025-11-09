@@ -156,7 +156,7 @@ After updating environment variables:
    ```bash
    # Set environment variables locally
    export DATABASE_URL="your-connection-string"
-   
+
    # Test connection
    npx prisma db pull
    ```
