@@ -18,5 +18,6 @@ export default async function CreatorOnboardingPage() {
   }
 
   // User is authenticated but not a creator - show onboarding form
-  return <CreatorOnboardingForm />;
+  const initialDisplayName = user.name || "";
+  return <CreatorOnboardingForm initialDisplayName={initialDisplayName} />;
 }

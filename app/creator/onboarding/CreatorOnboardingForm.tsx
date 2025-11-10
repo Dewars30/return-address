@@ -2,69 +2,49 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
 
-export default function CreatorOnboardingForm() {
+type Props = {
+  initialDisplayName: string;
+};
+
+export default function CreatorOnboardingForm({ initialDisplayName }: Props) {
   const router = useRouter();
-  const { user: clerkUser, isLoaded } = useUser();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [displayName, setDisplayName] = useState(initialDisplayName || "");
+  const [handle, setHandle] = useState("");
+  const [shortBio, setShortBio] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    displayName: clerkUser?.firstName || clerkUser?.username || "",
-    handle: "",
-    shortBio: "",
-  });
-
-  // Update displayName when Clerk user loads
-  if (isLoaded && clerkUser && !formData.displayName) {
-    setFormData((prev) => ({
-      ...prev,
-      displayName: clerkUser.firstName || clerkUser.username || "",
-    }));
-  }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
-      const response = await fetch("/api/creator/onboard", {
+      const res = await fetch("/api/creator/onboard", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          displayName: formData.displayName,
-          handle: formData.handle,
-          shortBio: formData.shortBio,
+          displayName,
+          handle,
+          shortBio,
         }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-      if (!response.ok) {
-        setError(data?.error || "Onboarding failed");
-        setIsSubmitting(false);
+      if (!res.ok) {
+        setError(data?.error || "Failed to complete onboarding");
+        setLoading(false);
         return;
       }
 
-      // Only on success: redirect to creator agents page
       router.push("/creator/agents");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setIsSubmitting(false);
+      setError("Network error. Please try again.");
+      setLoading(false);
     }
   };
-
-  if (!isLoaded) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -74,7 +54,7 @@ export default function CreatorOnboardingForm() {
           Complete your creator profile to start building and monetizing AI agents.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={onSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -89,28 +69,25 @@ export default function CreatorOnboardingForm() {
               type="text"
               id="displayName"
               required
-              value={formData.displayName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, displayName: e.target.value }))
-              }
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
             <label htmlFor="handle" className="block text-sm font-medium text-gray-700 mb-2">
-              Handle *
+              Creator Handle *
             </label>
             <input
               type="text"
               id="handle"
               required
-              value={formData.handle}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, handle: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))
-              }
+              value={handle}
+              onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
               placeholder="your-handle"
-              pattern="[a-z0-9-]+"
+              pattern="^[a-z0-9-]+$"
+              title="Use only lowercase letters, numbers, and hyphens."
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="mt-1 text-sm text-gray-500">
@@ -125,10 +102,8 @@ export default function CreatorOnboardingForm() {
             <textarea
               id="shortBio"
               rows={4}
-              value={formData.shortBio}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, shortBio: e.target.value }))
-              }
+              value={shortBio}
+              onChange={(e) => setShortBio(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -138,16 +113,16 @@ export default function CreatorOnboardingForm() {
               type="button"
               onClick={() => router.back()}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-              disabled={isSubmitting}
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Submitting..." : "Complete Onboarding"}
+              {loading ? "Completing..." : "Complete onboarding"}
             </button>
           </div>
         </form>
