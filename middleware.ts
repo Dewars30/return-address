@@ -15,9 +15,10 @@ export default clerkMiddleware((auth, req) => {
   const { userId } = auth();
 
   if (!userId) {
-    return auth().redirectToSignIn({
-      returnBackUrl: req.url,
-    });
+    // Redirect to /sign-in on primary domain (not accounts.returnaddress.io)
+    const signInUrl = new URL("/sign-in", req.url);
+    signInUrl.searchParams.set("redirect_url", req.url);
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();

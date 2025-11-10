@@ -53,32 +53,32 @@ export async function getCurrentUser() {
 }
 
 /**
- * Require authentication - redirects to home if not authenticated
+ * Require authentication - redirects to /sign-in if not authenticated
  * Gracefully handles cases where Clerk middleware hasn't run
- * Note: We don't have a /sign-in route - we use Clerk's modal for sign-in
+ * Note: Middleware protects routes and redirects to /sign-in, but this is a fallback
  */
 export async function requireAuth() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      // Redirect to home - middleware should have handled auth, but if we get here,
-      // redirect to home and let the UI show the sign-in modal
-      redirect("/");
+      // Redirect to /sign-in - middleware should have handled auth, but if we get here,
+      // redirect to sign-in page
+      redirect("/sign-in");
     }
 
     const user = await getCurrentUser();
     if (!user) {
       // If userId exists but getCurrentUser() fails, it's likely a database error
-      // Log it and redirect to home rather than a non-existent /sign-in route
+      // Log it and redirect to sign-in
       console.error("getCurrentUser() returned null despite userId existing");
-      redirect("/");
+      redirect("/sign-in");
     }
     return user;
   } catch (error) {
-    // Log the error but don't redirect to non-existent route
+    // Log the error and redirect to sign-in
     console.error("requireAuth() error:", error);
-    // Redirect to home - middleware should have handled auth
-    redirect("/");
+    // Redirect to sign-in - middleware should have handled auth
+    redirect("/sign-in");
   }
 }
 
