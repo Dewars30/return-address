@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+// This route uses requireCreator() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

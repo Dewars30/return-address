@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
 import { createConnectOnboardingLink } from "@/lib/stripe";
 
+// This route uses requireCreator() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const user = await requireCreator();

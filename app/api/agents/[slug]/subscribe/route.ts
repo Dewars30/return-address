@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db";
 import { createCheckoutSession } from "@/lib/stripe";
 import { type AgentSpec } from "@/lib/agentSpec";
 
+// This route uses requireAuth() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { slug: string } }

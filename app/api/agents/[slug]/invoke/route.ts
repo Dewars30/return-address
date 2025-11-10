@@ -9,6 +9,9 @@ import { type AgentSpec } from "@/lib/agentSpec";
 import { logError, logInfo } from "@/lib/log";
 import { checkRateLimit } from "@/lib/rateLimit";
 
+// This route uses cookies() and auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 const ANON_COOKIE_NAME = "return_address_anon_id";
 const ANON_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 

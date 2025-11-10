@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
+// This route uses requireAuth() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const user = await requireAuth(); // must return the DB-backed user with id
 
