@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import CreatorOnboardingForm from "./CreatorOnboardingForm";
 
+// This page uses getCurrentUser() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export default async function CreatorOnboardingPage() {
   const user = await getCurrentUser();
 

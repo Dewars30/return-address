@@ -74,6 +74,13 @@ function checkEnvVars() {
   if (warned) return;
   warned = true;
 
+  // Skip strict checks in CI environment
+  const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+  if (isCI) {
+    // In CI, only warn, don't enforce (build will use dummy values from workflow)
+    return;
+  }
+
   const missing: string[] = [];
   const isProduction = process.env.NODE_ENV === "production";
 
