@@ -5,7 +5,7 @@ import { logError, logInfo } from "@/lib/log";
 /**
  * Health check endpoint to test database connection
  * GET /api/health/db
- * 
+ *
  * Uses $queryRawUnsafe to avoid prepared statement conflicts during Next.js static generation.
  * This route must be dynamic (not statically generated) since it tests a live DB connection.
  */

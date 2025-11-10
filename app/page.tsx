@@ -65,6 +65,7 @@ export default async function Home() {
           </Link>
           <Link
             href="/creator/onboarding"
+            prefetch={false}
             className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
           >
             Become a creator
