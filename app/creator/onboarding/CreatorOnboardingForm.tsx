@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Props = {
   initialDisplayName: string;
 };
 
 export default function CreatorOnboardingForm({ initialDisplayName }: Props) {
-  const router = useRouter();
   const [displayName, setDisplayName] = useState(initialDisplayName || "");
   const [handle, setHandle] = useState("");
   const [shortBio, setShortBio] = useState("");
@@ -39,7 +37,9 @@ export default function CreatorOnboardingForm({ initialDisplayName }: Props) {
         return;
       }
 
-      router.push("/creator/agents");
+      // Use window.location.href to force full page reload and ensure server gets fresh data
+      // This prevents race conditions where router.push() navigates before DB update commits
+      window.location.href = "/creator/agents";
     } catch (err) {
       setError("Network error. Please try again.");
       setLoading(false);
@@ -111,7 +111,7 @@ export default function CreatorOnboardingForm({ initialDisplayName }: Props) {
           <div className="flex items-center justify-end space-x-4">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => window.history.back()}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
               disabled={loading}
             >
