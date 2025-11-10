@@ -1,0 +1,170 @@
+---
+alwaysApply: true
+priority: 90
+---
+
+# Return Address – Project Rules
+
+These rules apply **only** to this repository. Obey them after the core rules. If user requests conflict with this file, prefer this file for this project.
+
+Context:
+- Next.js App Router
+- TypeScript
+- Prisma + Postgres (Supabase)
+- Clerk for auth
+- Stripe + Stripe Connect for subscriptions
+- Deployed on Vercel at `NEXT_PUBLIC_APP_URL`
+- Product: marketplace for expert-owned AI agents with clear provenance, enforced guardrails, and direct revenue to creators.
+
+## 1. Architectural invariants (do not casually break these)
+
+### 1.1 Authentication & identity
+
+1. Root layout:
+   - Wrap the app in `ClerkProvider` in `app/layout.tsx`.
+   - Use `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` only.
+   - `afterSignInUrl` / `afterSignUpUrl` derive from `NEXT_PUBLIC_APP_URL` (with localhost fallback).
+   - No hardcoded Clerk frontend URLs or instance IDs.
+
+2. Nav:
+   - Must be a client component.
+   - Uses:
+     - `<SignInButton mode="modal">` for guests.
+     - `<UserButton afterSignOutUrl="/" />` for signed-in users.
+   - No ad-hoc redirects that bypass Clerk.
+
+3. Middleware:
+   - Use `clerkMiddleware` + `createRouteMatcher`.
+   - Protect only:
+     - `/creator(.*)`
+     - `/admin(.*)`
+     - `/api/creator(.*)`
+   - For protected routes without `userId`:
+     - call `auth().redirectToSignIn({ returnBackUrl: req.url })`.
+   - Do **not**:
+     - use `auth.protect()`.
+     - intercept or break Clerk callback URLs.
+
+### 1.2 Database & Prisma
+
+1. All DB access goes through `@/lib/db`:
+   - Single `PrismaClient` instance.
+   - No `new PrismaClient()` in routes or components.
+
+2. Assume:
+   - `DATABASE_URL` configured correctly.
+   - `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS` may be set in production.
+   - Do not override these in code.
+
+3. Health checks:
+   - Use `SELECT 1` via `prisma.$queryRaw` inside `try/catch`.
+   - Return JSON `{ status, database, error? }`.
+   - Never crash the route.
+
+### 1.3 Agents, creators & marketplace
+
+1. Creators:
+   - Only authenticated users who completed onboarding (`isCreator = true`) may:
+     - access `/creator/agents*`
+     - create / edit / publish agents.
+
+2. Ownership:
+   - All creator-facing APIs must enforce:
+     - `agent.creatorId === currentUser.id`.
+
+3. Visibility:
+   - Public marketplace and runtime must:
+     - show only `status = "published"`,
+     - exclude suspended agents.
+
+4. Versioning:
+   - AgentSpec is versioned (one active at a time).
+   - Updates create new versions; do not mutate history silently.
+
+5. RAG:
+   - If RAG is enabled:
+     - scope all queries by `agentId`,
+     - never leak other agents' data.
+
+### 1.4 Stripe & money flows
+
+1. Use:
+   - `STRIPE_SECRET_KEY` from env only.
+   - Stripe Connect for creator payouts.
+   - Platform fee via configuration, not hardcoded in multiple places.
+
+2. Connect:
+   - Creator Connect setup:
+     - requires auth + creator role.
+     - writes `stripeAccountId` on User.
+
+3. Checkout:
+   - Subscribe endpoint:
+     - requires auth.
+     - confirms agent is published.
+     - confirms creator has `stripeAccountId`.
+     - sets metadata to map back to `userId` + `agentId`.
+
+4. Webhooks:
+   - Verify via `STRIPE_WEBHOOK_SECRET`.
+   - Must be idempotent.
+   - Update Subscription records based on events; never trust client.
+
+5. No test keys, no fake endpoints in committed code.
+
+### 1.5 Safety, admin & suspension
+
+1. Admin:
+   - Admin pages/APIs are gated via env-configured admin emails or explicit roles.
+   - Never exposed to normal users.
+
+2. Suspended agents:
+   - Cannot appear in marketplace.
+   - Cannot be invoked.
+
+3. ErrorBoundary:
+   - Must rethrow Next.js `NEXT_REDIRECT` / `NEXT_NOT_FOUND` signals.
+   - Only display fallback for real errors.
+
+## 2. Execution rules (how to change this codebase)
+
+1. When touching critical flows (auth, billing, invoke, creator onboarding, RAG, admin):
+   - Trace the full request path before editing.
+   - Understand how it’s used in UI + APIs.
+   - Prefer minimal, targeted changes.
+
+2. For every non-trivial change:
+   - Show:
+     - files edited,
+     - key snippets,
+     - commands run (`npm run lint`, `npm run build`),
+     - their actual results.
+   - You may **not** claim correctness without these.
+
+3. Error handling:
+   - API routes:
+     - Always respond with JSON `{ error, ... }` on failure.
+     - Use correct status codes (400/401/403/404/409/422/429/500).
+     - Do not leak stack traces or secrets.
+
+4. Marketplace & runtime guarantees:
+   - Never serve draft or suspended agents.
+   - Never bypass subscription / trial / limit checks in `/api/agents/[slug]/invoke`.
+
+5. Perspective / outcome awareness:
+   - If a proposed change complicates billing/auth/safety for cosmetic gain, call it out and suggest a simpler option.
+   - Flag anything that could:
+     - break payouts,
+     - weaken guardrails,
+     - or confuse attribution/provenance.
+
+6. No self-audit fiction:
+   - Do **not** declare:
+     - “no remaining issues”
+     - “everything is production-ready”
+   - Instead:
+     - state what is verified (with evidence),
+     - list what still depends on external config (Clerk/Stripe/Supabase/Vercel),
+     - and what remains untested.
+
+These rules are here to make this repo executable, auditable, and safe to improve. Follow them strictly.

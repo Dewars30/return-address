@@ -1,0 +1,149 @@
+---
+alwaysApply: true
+priority: 80
+---
+
+# Debug Playbook — Return Address
+
+Purpose:
+Standardize how you investigate and fix issues. No storytelling, only observable facts and reversible changes.
+
+You MUST follow this whenever the user reports a bug or something "feels off".
+
+## 1. Ingest the Signal
+
+When given a bug or weird behavior:
+
+1. Read the user’s description carefully.
+2. Identify:
+   - endpoint(s) or page(s) involved,
+   - HTTP method(s),
+   - relevant auth state (signed in/out/creator/admin),
+   - any referenced logs or stack traces.
+3. Restate the problem in 1–2 precise sentences.
+4. Do not speculate root cause yet.
+
+## 2. Locate the Execution Path
+
+Find the exact code path:
+
+1. For pages:
+   - `app/**/page.tsx`,
+   - any shared components they use.
+2. For APIs:
+   - `app/api/**/route.ts`,
+   - relevant lib helpers.
+
+You must confirm you’re looking at the real path, not a similarly named dead file.
+
+## 3. Reproduce via Code Reasoning (and Tools if Possible)
+
+1. Walk through the control flow in code:
+   - auth checks,
+   - guards (creator/admin),
+   - Prisma calls,
+   - external calls (Clerk/Stripe/Supabase),
+   - returns.
+
+2. Use the terminal:
+   - `npm run lint`
+   - `npm run build`
+   - For API issues, add temporary, minimal logging if needed.
+
+3. If the reported error includes:
+   - HTTP status → map to the corresponding branch.
+   - Prisma error → confirm DB usage and env assumptions.
+   - Clerk/Stripe error → confirm integration code vs documented patterns.
+
+Only after this do you form a hypothesis.
+
+## 4. Prioritized Root-Cause Checklist
+
+Always check in this order (and stop when you find the real cause):
+
+1. **Auth / middleware**
+   - Route unexpectedly protected or unprotected?
+   - Using correct guard (`requireCreator`, etc.)?
+   - Any redirect/throw getting caught by ErrorBoundary?
+
+2. **Input validation / parsing**
+   - Are we assuming fields that the client doesn’t send?
+   - Are we crashing on `await req.json()` without try/catch?
+
+3. **Prisma / DB**
+   - Using shared `prisma` from `@/lib/db`?
+   - Wrong model/field names?
+   - Missing `where` constraints causing null access?
+   - Raw query usage safe?
+
+4. **External services**
+   - Clerk: using published key, no deprecated APIs.
+   - Stripe: metadata presence, signature verification, event names.
+   - Supabase: no hard-coded URLs, rely on `DATABASE_URL`.
+
+5. **Client fetch handling**
+   - Is the client swallowing real errors as “Failed to fetch”?
+   - Do we handle non-2xx status codes explicitly?
+
+If none of these are the cause, state that explicitly and show what you checked.
+
+## 5. Apply Minimal, Targeted Fix
+
+When you fix:
+
+1. Change only what is necessary.
+2. Keep behavior backwards-compatible unless obviously wrong.
+3. In API routes:
+   - Wrap logic in try/catch.
+   - Return JSON with:
+     - `error` field,
+     - appropriate status code.
+   - Log the internal error once with `console.error` (no secrets).
+
+4. In React/Next pages:
+   - Use existing patterns (server components, redirects, guards).
+   - Don’t add new libraries for trivial problems.
+
+## 6. Verify — This is Mandatory
+
+After any fix:
+
+1. Run:
+   - `npm run lint`
+   - `npm run build`
+2. If the reported bug involves a specific endpoint or flow:
+   - Inspect that handler/component and confirm behavior using reasoning + logs.
+   - If tool access supports it, make a sample request (locally) and verify.
+
+You must paste or summarize REAL command output before claiming success.
+
+## 7. Reporting Style
+
+When you reply to the user:
+
+1. State:
+   - What was broken (1–3 sentences, factual).
+   - What you changed (file + concise description).
+   - How you verified (commands run, status).
+2. No:
+   - “Should be fixed”
+   - “Likely resolved”
+   - “Known issue, ignore”
+3. If remaining risk exists:
+   - Call it out explicitly.
+   - Suggest the next concrete check (e.g., “Verify in production by doing X”).
+
+## 8. When You’re Not Sure
+
+If you hit a limit (missing envs, external dashboard config):
+
+1. Say:
+   - what you confirmed in the code,
+   - what depends on external config,
+   - what the operator must check (clearly, stepwise).
+2. Do NOT fabricate success or pretend to have run commands you couldn’t.
+
+This playbook is non-optional. If your behavior conflicts with it, adjust your behavior, not the rules.
+---
+alwaysApply: true
+---
