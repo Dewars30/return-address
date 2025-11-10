@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const user = await requireAuth(); // must return the DB-backed user with id
+
   try {
-    const user = await requireAuth();
+    const body = await req.json();
+    const displayName = (body.displayName || "").trim();
+    const handle = (body.handle || "").trim().toLowerCase();
+    const shortBio = (body.shortBio || "").trim() || null;
 
-    const body = await request.json();
-    const { displayName, handle, shortBio } = body;
-
-    // Validate required fields
     if (!displayName || !handle) {
       return NextResponse.json(
         { error: "Display name and handle are required" },
@@ -17,42 +18,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate handle format (lowercase, alphanumeric, hyphens only)
     if (!/^[a-z0-9-]+$/.test(handle)) {
       return NextResponse.json(
-        { error: "Handle must contain only lowercase letters, numbers, and hyphens" },
+        { error: "Handle must use only lowercase letters, numbers, and hyphens" },
         { status: 400 }
       );
     }
 
-    // Check if handle is already taken
-    const existingUser = await prisma.user.findUnique({
-      where: { handle },
+    // Ensure handle is unique for other users
+    const existing = await prisma.user.findFirst({
+      where: {
+        handle,
+        NOT: { id: user.id },
+      },
     });
 
-    if (existingUser && existingUser.id !== user.id) {
+    if (existing) {
       return NextResponse.json(
         { error: "Handle is already taken" },
-        { status: 400 }
+        { status: 409 }
       );
     }
 
-    // Update user with creator info
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: user.id },
       data: {
         name: displayName,
         handle,
-        shortBio: shortBio || null,
+        shortBio,
         isCreator: true,
       },
     });
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Onboarding error:", error);
+    console.error("Creator onboarding failed:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: "Failed to complete creator onboarding" },
       { status: 500 }
     );
   }

@@ -35,19 +35,25 @@ export default function CreatorOnboardingForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          displayName: formData.displayName,
+          handle: formData.handle,
+          shortBio: formData.shortBio,
+        }),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to complete onboarding");
+        setError(data?.error || "Onboarding failed");
+        setIsSubmitting(false);
+        return;
       }
 
-      // Use window.location.href to force full page reload and ensure server gets fresh data
-      window.location.href = "/creator/agents";
+      // Only on success: redirect to creator agents page
+      router.push("/creator/agents");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
       setIsSubmitting(false);
     }
   };
