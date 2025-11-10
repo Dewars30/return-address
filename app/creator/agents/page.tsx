@@ -4,6 +4,9 @@ import { requireCreator } from "@/lib/auth";
 
 import { prisma } from "@/lib/db";
 
+// This page uses requireCreator() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export default async function CreatorAgentsPage() {
   const user = await requireCreator();
 

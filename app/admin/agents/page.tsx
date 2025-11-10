@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import SuspendButton from "./SuspendButton";
 
+// This page uses requireAdmin() which uses auth, so it must be dynamic
+export const dynamic = "force-dynamic";
+
 export default async function AdminAgentsPage() {
   const admin = await requireAdmin();
 
