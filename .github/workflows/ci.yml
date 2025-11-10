@@ -47,9 +47,24 @@ jobs:
           GITHUB_ACTIONS: "true"
         run: npm run build
 
-      # Skip smoke test in CI - requires running server and database
-      # Smoke tests should be run manually or in deployment environments
-      # - name: Smoke tests
-      #   run: npm run smoke
-      #   env:
-      #     NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Start production server
+        env:
+          NODE_ENV: production
+          PORT: "3000"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: "whsec_dummy_for_ci"
+          OPENAI_API_KEY: "sk-ci-dummy"
+        run: |
+          nohup npm run start > server.log 2>&1 &
+          sleep 10
+          echo "Server started"
+
+      - name: Run smoke tests
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+        run: npm run smoke
