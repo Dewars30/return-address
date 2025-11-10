@@ -14,7 +14,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
               "img-src 'self' https://img.clerk.com data:",
               "font-src 'self' data:",
-              "connect-src 'self' https://clerk.returnaddress.io https://*.clerk.services",
+              "connect-src 'self' https://clerk.returnaddress.io https://accounts.returnaddress.io https://*.clerk.services",
               "frame-src 'self' https://clerk.returnaddress.io https://accounts.returnaddress.io https://*.clerk.services",
               "worker-src 'self' blob:",
             ].join('; '),
