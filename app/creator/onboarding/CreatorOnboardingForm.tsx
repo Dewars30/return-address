@@ -84,11 +84,11 @@ export default function CreatorOnboardingForm({ initialDisplayName }: Props) {
               id="handle"
               required
               value={handle}
-              onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              onChange={(e) => setHandle(e.target.value)}
               placeholder="your-handle"
-              pattern="^[a-z0-9-]+$"
-              title="Use only lowercase letters, numbers, and hyphens."
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              pattern="[a-z0-9\-]+"
+              title="Use only lowercase letters, numbers, and hyphens."
             />
             <p className="mt-1 text-sm text-gray-500">
               Lowercase letters, numbers, and hyphens only. Must be unique.
