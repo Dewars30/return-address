@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import SuspendButton from "./SuspendButton";
 
@@ -7,14 +7,14 @@ export default async function AdminAgentsPage() {
   const admin = await requireAdmin();
 
   // Get all agents with owner info
-  let agents: Awaited<ReturnType<typeof db.agent.findMany<{
+  let agents: Awaited<ReturnType<typeof prisma.agent.findMany<{
     include: {
       owner: { select: { handle: true; name: true; email: true } };
       specs: true;
     };
   }>>>;
   try {
-    agents = await db.agent.findMany({
+    agents = await prisma.agent.findMany({
       include: {
         owner: {
           select: {

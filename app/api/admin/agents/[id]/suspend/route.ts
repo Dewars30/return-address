@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function POST(
     const agentId = params.id;
 
     // Update agent status to suspended
-    await db.agent.update({
+    await prisma.agent.update({
       where: { id: agentId },
       data: { status: "suspended" },
     });

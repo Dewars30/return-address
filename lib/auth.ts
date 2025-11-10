@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { db } from "./db";
+import { prisma } from "./db";
 
 /**
  * Get the current authenticated user from Clerk
@@ -16,12 +16,12 @@ export async function getCurrentUser() {
     if (!clerkUser) return null;
 
     // Sync user to database (preserve existing fields like stripeCustomerId)
-    const existingUser = await db.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { authId: userId },
       select: { stripeCustomerId: true, isCreator: true, stripeAccountId: true },
     });
 
-    const user = await db.user.upsert({
+    const user = await prisma.user.upsert({
       where: { authId: userId },
       update: {
         email: clerkUser.emailAddresses[0]?.emailAddress || "",

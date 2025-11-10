@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { validateAgentSpec, type AgentSpec } from "@/lib/agentSpec";
 
 /**
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const slug = generateSlug(agentSpec.profile.name, user.id);
 
     // Check if slug already exists
-    const existingAgent = await db.agent.findUnique({
+    const existingAgent = await prisma.agent.findUnique({
       where: { slug },
     });
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Agent
-    const agent = await db.agent.create({
+    const agent = await prisma.agent.create({
       data: {
         slug: finalSlug,
         ownerId: user.id,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ agentId: agent.id }, { status: 201 });
+    return NextResponse.json({ id: agent.id, slug: agent.slug }, { status: 201 });
   } catch (error) {
     console.error("Create agent error:", error);
 

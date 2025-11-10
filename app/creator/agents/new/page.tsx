@@ -62,7 +62,7 @@ export default function NewAgentPage() {
       const data = await response.json();
       // Use window.location.href to force full page reload and ensure server gets fresh data
       // This prevents ErrorBoundary from catching NEXT_REDIRECT errors during client-side navigation
-      window.location.href = `/creator/agents/${data.agentId}`;
+      window.location.href = `/creator/agents/${data.id}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

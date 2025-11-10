@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { createCheckoutSession } from "@/lib/stripe";
 import { type AgentSpec } from "@/lib/agentSpec";
 
@@ -12,11 +12,11 @@ export async function POST(
     const user = await requireAuth();
     const slug = params.slug;
 
-    // Load agent with active spec and creator
-    const agent = await db.agent.findFirst({
+    // Load agent with active spec and creator (exclude suspended)
+    const agent = await prisma.agent.findFirst({
       where: {
         slug,
-        status: "published",
+        status: "published", // Only published agents, exclude suspended
       },
       include: {
         owner: {
@@ -57,7 +57,7 @@ export async function POST(
     }
 
     // Check for existing subscription
-    const existingSubscription = await db.subscription.findFirst({
+    const existingSubscription = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
         agentId: agent.id,

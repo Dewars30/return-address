@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { logError, logInfo } from "@/lib/log";
 
 /**
  * Health check endpoint to test database connection
@@ -7,24 +8,30 @@ import { db } from "@/lib/db";
  */
 export async function GET(request: NextRequest) {
   try {
-    // Test database connection using $queryRawUnsafe to avoid prepared statements
-    // This works with connection poolers (PgBouncer) that don't support prepared statements
-    await db.$queryRawUnsafe("SELECT 1");
+    // Test database connection
+    // Prepared-statement behavior is controlled via env/Prisma config, not hardcoded queries
+    await prisma.$queryRaw`SELECT 1`;
 
-    return NextResponse.json({
-      status: "ok",
-      database: "connected",
-    });
+    logInfo({ route: "/api/health/db", statusCode: 200 }, "Database health check passed");
+
+    return NextResponse.json(
+      {
+        status: "ok",
+        database: "connected",
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Database health check failed:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logError(
+      { route: "/api/health/db", statusCode: 500 },
+      error instanceof Error ? error : new Error(String(error))
+    );
 
     return NextResponse.json(
       {
         status: "error",
         database: "disconnected",
-        error: errorMessage,
+        error: String(error),
       },
       { status: 500 }
     );

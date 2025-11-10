@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { type AgentSpec } from "@/lib/agentSpec";
 import Chat from "./Chat";
@@ -12,10 +12,10 @@ export default async function AgentDetailPage({
 
   try {
     // Load agent with active spec and creator (exclude suspended)
-    const agent = await db.agent.findFirst({
+    const agent = await prisma.agent.findFirst({
       where: {
         slug,
-        status: "published", // Only published agents, not suspended
+        status: "published", // Only published agents, exclude suspended
       },
       include: {
         owner: {

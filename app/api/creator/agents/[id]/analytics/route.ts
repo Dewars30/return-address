@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
     const agentId = params.id;
 
     // Verify ownership
-    const agent = await db.agent.findUnique({
+    const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       select: { ownerId: true },
     });
@@ -25,7 +25,7 @@ export async function GET(
     }
 
     // Active subscribers count
-    const activeSubscribers = await db.subscription.count({
+    const activeSubscribers = await prisma.subscription.count({
       where: {
         agentId,
         status: {
@@ -36,7 +36,7 @@ export async function GET(
 
     // Messages in last 30 days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const messagesLast30Days = await db.message.count({
+    const messagesLast30Days = await prisma.message.count({
       where: {
         agentId,
         createdAt: {

@@ -3,7 +3,7 @@
  * For chunking, embedding, and querying agent knowledge
  */
 
-import { db } from "./db";
+import { prisma } from "./db";
 import { Prisma } from "@prisma/client";
 
 export type ChunkMetadata = {
@@ -51,18 +51,18 @@ export async function storeKnowledgeChunks(
   chunks: Array<{ content: string; metadata?: ChunkMetadata }>
 ) {
   // TODO: Generate embeddings and store in database
-  // For now, just store without embeddings
-  for (const chunk of chunks) {
-    await db.agentKnowledgeChunk.create({
-      data: {
-        agentId,
-        fileId,
-        content: chunk.content,
-        metadata: (chunk.metadata || {}) as Prisma.InputJsonValue,
-        // embedding will be added when embedding generation is implemented
-      },
-    });
-  }
+    // For now, just store without embeddings
+    for (const chunk of chunks) {
+      await prisma.agentKnowledgeChunk.create({
+        data: {
+          agentId,
+          fileId,
+          content: chunk.content,
+          metadata: (chunk.metadata || {}) as Prisma.InputJsonValue,
+          // embedding will be added when embedding generation is implemented
+        },
+      });
+    }
 }
 
 /**
@@ -89,12 +89,11 @@ export async function getRelevantChunks(
   topK: number = 5
 ): Promise<string[]> {
   try {
-    // For V0: Simple text-based search (no vector embeddings yet)
-    // Search chunks that contain query terms
     // For V0: Simple text-based search (case-insensitive)
-    const chunks = await db.agentKnowledgeChunk.findMany({
+    // RAG is scoped by agentId only - no cross-agent data leakage
+    const chunks = await prisma.agentKnowledgeChunk.findMany({
       where: {
-        agentId,
+        agentId, // Scoped to this agent only
         content: {
           contains: query,
           mode: "insensitive",

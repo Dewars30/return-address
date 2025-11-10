@@ -1,16 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma?: PrismaClient;
 };
 
-export const db =
+export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+
+// Export db as alias for backward compatibility
+export const db = prisma;
 
 /**
  * Test database connection
@@ -19,7 +24,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
  */
 export async function testDatabaseConnection(): Promise<boolean> {
   try {
-    await db.$queryRawUnsafe("SELECT 1");
+    await prisma.$queryRawUnsafe("SELECT 1");
     return true;
   } catch (error) {
     console.error("Database connection failed:", error);

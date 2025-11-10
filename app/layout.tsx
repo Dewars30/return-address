@@ -10,6 +10,9 @@ import Nav from "./components/Nav";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
+// Import env check to validate environment variables on startup
+import "@/lib/env";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -21,9 +24,6 @@ export const metadata: Metadata = {
   },
 };
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
 export default function RootLayout({
   children,
 }: {
@@ -32,8 +32,6 @@ export default function RootLayout({
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      afterSignInUrl={appUrl}
-      afterSignUpUrl={appUrl}
     >
       <html lang="en">
         <body className={inter.className}>

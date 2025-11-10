@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { validateAgentSpec, type AgentSpec } from "@/lib/agentSpec";
 
 export async function GET(
@@ -11,7 +11,7 @@ export async function GET(
     const user = await requireCreator();
     const agentId = params.id;
 
-    const agent = await db.agent.findUnique({
+    const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       include: {
         specs: {
@@ -32,7 +32,7 @@ export async function GET(
     }
 
     // Get user's Stripe account status
-    const userWithStripe = await db.user.findUnique({
+    const userWithStripe = await prisma.user.findUnique({
       where: { id: user.id },
       select: { stripeAccountId: true },
     });
@@ -75,7 +75,7 @@ export async function PUT(
     const agentSpec = spec as AgentSpec;
 
     // Verify agent exists and user owns it
-    const agent = await db.agent.findUnique({
+    const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       include: {
         specs: {
@@ -100,14 +100,14 @@ export async function PUT(
 
     // Deactivate current spec
     if (currentSpec) {
-      await db.agentSpec.update({
+      await prisma.agentSpec.update({
         where: { id: currentSpec.id },
         data: { isActive: false },
       });
     }
 
     // Create new version
-    await db.agentSpec.create({
+    await prisma.agentSpec.create({
       data: {
         agentId,
         version: nextVersion,

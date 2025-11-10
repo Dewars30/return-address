@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import Stripe from "stripe";
+import { logError, logInfo } from "@/lib/log";
 
 export async function POST(request: NextRequest) {
   const stripe = getStripeClient();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.error("STRIPE_WEBHOOK_SECRET is not set");
+    logError(
+      { route: "/api/stripe/webhook", statusCode: 500 },
+      new Error("STRIPE_WEBHOOK_SECRET is not set")
+    );
     return NextResponse.json(
       { error: "Webhook secret not configured" },
       { status: 500 }
@@ -30,7 +34,11 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    logError(
+      { route: "/api/stripe/webhook", statusCode: 400 },
+      err instanceof Error ? err : new Error(String(err)),
+      { stripeEventType: "signature_verification_failed" }
+    );
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 400 }
@@ -49,7 +57,10 @@ export async function POST(request: NextRequest) {
           : session.subscription?.id;
 
       if (!subscriptionId) {
-        console.error("No subscription ID in checkout session");
+        logError(
+          { route: "/api/stripe/webhook", stripeEventType: event.type, statusCode: 200 },
+          new Error("No subscription ID in checkout session")
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -61,7 +72,14 @@ export async function POST(request: NextRequest) {
       const userId = metadata.userId;
 
       if (!agentId || !userId) {
-        console.error("Missing agentId or userId in subscription metadata");
+        logError(
+          {
+            route: "/api/stripe/webhook",
+            stripeEventType: event.type,
+            statusCode: 200,
+          },
+          new Error("Missing agentId or userId in subscription metadata")
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -72,12 +90,21 @@ export async function POST(request: NextRequest) {
           : subscription.customer?.id;
 
       if (!customerId) {
-        console.error("No customer ID in subscription");
+        logError(
+          {
+            route: "/api/stripe/webhook",
+            stripeEventType: event.type,
+            agentId,
+            userId,
+            statusCode: 200,
+          },
+          new Error("No customer ID in subscription")
+        );
         return NextResponse.json({ received: true });
       }
 
       // Create or update subscription in database
-      await db.subscription.upsert({
+      await prisma.subscription.upsert({
         where: {
           stripeSubscriptionId: subscriptionId,
         },
@@ -94,6 +121,17 @@ export async function POST(request: NextRequest) {
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         },
       });
+
+      logInfo(
+        {
+          route: "/api/stripe/webhook",
+          stripeEventType: event.type,
+          agentId,
+          userId,
+          statusCode: 200,
+        },
+        "Subscription created/updated from checkout"
+      );
     }
 
     // Handle subscription.canceled
@@ -113,7 +151,7 @@ export async function POST(request: NextRequest) {
 
       // Upsert to handle idempotency (subscription may not exist yet if events arrive out of order)
       if (agentId && userId && customerId) {
-        await db.subscription.upsert({
+        await prisma.subscription.upsert({
           where: {
             stripeSubscriptionId: subscriptionId,
           },
@@ -133,7 +171,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Fallback: update if exists (for backwards compatibility)
-        await db.subscription.updateMany({
+        await prisma.subscription.updateMany({
           where: {
             stripeSubscriptionId: subscriptionId,
           },
@@ -161,7 +199,7 @@ export async function POST(request: NextRequest) {
 
       // Upsert to handle idempotency (subscription may not exist yet if events arrive out of order)
       if (agentId && userId && customerId) {
-        await db.subscription.upsert({
+        await prisma.subscription.upsert({
           where: {
             stripeSubscriptionId: subscriptionId,
           },
@@ -180,7 +218,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Fallback: update if exists (for backwards compatibility)
-        await db.subscription.updateMany({
+        await prisma.subscription.updateMany({
           where: {
             stripeSubscriptionId: subscriptionId,
           },
@@ -215,7 +253,7 @@ export async function POST(request: NextRequest) {
 
           // Upsert to handle idempotency (subscription may not exist yet if events arrive out of order)
           if (agentId && userId && customerId) {
-            await db.subscription.upsert({
+            await prisma.subscription.upsert({
               where: {
                 stripeSubscriptionId: subscriptionId,
               },
@@ -235,7 +273,7 @@ export async function POST(request: NextRequest) {
             });
           } else {
             // Fallback: update if exists (for backwards compatibility)
-            await db.subscription.updateMany({
+            await prisma.subscription.updateMany({
               where: {
                 stripeSubscriptionId: subscriptionId,
               },
@@ -246,7 +284,7 @@ export async function POST(request: NextRequest) {
           }
         } catch (err) {
           // If subscription retrieval fails, fallback to updateMany
-          await db.subscription.updateMany({
+          await prisma.subscription.updateMany({
             where: {
               stripeSubscriptionId: subscriptionId,
             },
@@ -258,9 +296,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    logInfo(
+      { route: "/api/stripe/webhook", stripeEventType: event.type, statusCode: 200 },
+      "Webhook processed successfully"
+    );
+
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    logError(
+      {
+        route: "/api/stripe/webhook",
+        stripeEventType: event?.type,
+        statusCode: 500,
+      },
+      error instanceof Error ? error : new Error(String(error))
+    );
+
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }

@@ -1,10 +1,10 @@
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { AgentMarketplace } from "./components/AgentMarketplace";
 
 type AgentsWithIncludes = Awaited<
   ReturnType<
-    typeof db.agent.findMany<{
+    typeof prisma.agent.findMany<{
       include: {
         owner: { select: { handle: true; name: true } };
         specs: true;
@@ -14,12 +14,12 @@ type AgentsWithIncludes = Awaited<
 >;
 
 export default async function Home() {
-  // Query all published agents with error handling
+  // Query all published, non-suspended agents with error handling
   let agents: AgentsWithIncludes;
   try {
-    agents = await db.agent.findMany({
+    agents = await prisma.agent.findMany({
       where: {
-        status: "published",
+        status: "published", // Only published agents, exclude suspended
       },
       include: {
         owner: {

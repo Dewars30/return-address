@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { callLLM, type LLMMessage } from "@/lib/llmClient";
 import { getRelevantChunks } from "@/lib/rag";
 import { type AgentSpec } from "@/lib/agentSpec";
+import { logError, logInfo } from "@/lib/log";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const ANON_COOKIE_NAME = "return_address_anon_id";
 const ANON_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -30,7 +32,7 @@ async function getOrCreateAnonId(): Promise<string> {
 
   // Ensure anonymous user exists in database
   const anonEmail = `${anonId}@anon.returnaddress.local`;
-  const user = await db.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email: anonEmail },
     update: {},
     create: {
@@ -62,18 +64,37 @@ export async function POST(
 ) {
   try {
     const slug = params.slug;
-    const body = await request.json();
+
+    // Parse request body safely
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
     const userMessage = body.message;
 
     if (!userMessage || typeof userMessage !== "string") {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // a. Load agent (exclude suspended)
-    const agent = await db.agent.findFirst({
+    // a. Load agent (exclude suspended) with owner info to avoid N+1 query
+    const agent = await prisma.agent.findFirst({
       where: {
         slug,
-        status: "published", // Only published agents, not suspended
+        status: "published", // Only published agents, exclude suspended
+      },
+      include: {
+        owner: {
+          select: {
+            handle: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -84,8 +105,14 @@ export async function POST(
     // b. Identify caller
     const callerId = await getCallerId();
 
+    // Rate limit check (before expensive operations)
+    const rateLimitExceeded = await checkRateLimit(callerId, agent.id);
+    if (rateLimitExceeded) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+
     // c. Load active AgentSpec
-    const agentSpec = await db.agentSpec.findFirst({
+    const agentSpec = await prisma.agentSpec.findFirst({
       where: {
         agentId: agent.id,
         isActive: true,
@@ -111,7 +138,7 @@ export async function POST(
 
     if (authenticatedUser) {
       // Check for active subscription
-      const subscription = await db.subscription.findFirst({
+      const subscription = await prisma.subscription.findFirst({
         where: {
           userId: authenticatedUser.id,
           agentId: agent.id,
@@ -126,7 +153,7 @@ export async function POST(
 
     if (!hasActiveSubscription) {
       // Count prior user messages for trial check (only user messages count)
-      const messageCount = await db.message.count({
+      const messageCount = await prisma.message.count({
         where: {
           agentId: agent.id,
           callerId: callerId,
@@ -146,7 +173,7 @@ export async function POST(
 
     // e. Daily limit check (count user messages in last 24h)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const dailyMessageCount = await db.message.count({
+    const dailyMessageCount = await prisma.message.count({
       where: {
         agentId: agent.id,
         callerId: callerId,
@@ -161,7 +188,7 @@ export async function POST(
       return NextResponse.json({ error: "limit_reached" }, { status: 429 });
     }
 
-    // f. RAG (optional)
+    // f. RAG (optional) - scoped by agentId only
     let context = "";
     if (spec.knowledge.enabled) {
       const chunks = await getRelevantChunks(
@@ -177,12 +204,8 @@ export async function POST(
     // g. Prompt construction (deterministic scaffold)
     const systemParts: string[] = [];
 
-    // Load creator info for disclosure
-    const agentWithOwner = await db.agent.findUnique({
-      where: { id: agent.id },
-      include: { owner: { select: { handle: true, name: true } } },
-    });
-    const creatorName = agentWithOwner?.owner.handle || agentWithOwner?.owner.name || "the creator";
+    // Use owner info from already-loaded agent (no N+1 query)
+    const creatorName = agent.owner.handle || agent.owner.name || "the creator";
 
     // Category-specific sensitive disclaimer (prepended if categoryPolicy is "sensitive")
     if (spec.guardrails.categoryPolicy === "sensitive") {
@@ -279,7 +302,7 @@ export async function POST(
 
     // i. Logging
     // Insert user message
-    await db.message.create({
+    await prisma.message.create({
       data: {
         userId: authenticatedUser?.id || null,
         callerId: callerId,
@@ -290,7 +313,7 @@ export async function POST(
     });
 
     // Insert assistant message
-    await db.message.create({
+    await prisma.message.create({
       data: {
         userId: authenticatedUser?.id || null,
         callerId: callerId,
@@ -301,7 +324,7 @@ export async function POST(
     });
 
     // Insert usage log
-    await db.usageLog.create({
+    await prisma.usageLog.create({
       data: {
         userId: authenticatedUser?.id || null,
         callerId: callerId,
@@ -312,9 +335,29 @@ export async function POST(
     });
 
     // j. Respond
+    logInfo(
+      {
+        route: `/api/agents/${slug}/invoke`,
+        agentId: agent.id,
+        callerId: callerId,
+        userId: authenticatedUser?.id,
+        statusCode: 200,
+      },
+      "Agent invocation successful",
+      { isTrial, tokensUsed: llmResponse.tokensUsed }
+    );
+
     return NextResponse.json({ message: assistantMessage });
   } catch (error) {
-    console.error("Invoke agent error:", error);
+    logError(
+      {
+        route: `/api/agents/${params.slug}/invoke`,
+        agentId: params.slug,
+        statusCode: 500,
+      },
+      error instanceof Error ? error : new Error(String(error))
+    );
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Internal server error",

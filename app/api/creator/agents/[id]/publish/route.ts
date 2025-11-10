@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCreator } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function POST(
     const agentId = params.id;
 
     // Verify user has Stripe account
-    const userWithStripe = await db.user.findUnique({
+    const userWithStripe = await prisma.user.findUnique({
       where: { id: user.id },
       select: { stripeAccountId: true },
     });
@@ -24,7 +24,7 @@ export async function POST(
     }
 
     // Verify agent exists and user owns it
-    const agent = await db.agent.findUnique({
+    const agent = await prisma.agent.findUnique({
       where: { id: agentId },
     });
 
@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // Update agent status to published
-    await db.agent.update({
+    await prisma.agent.update({
       where: { id: agentId },
       data: { status: "published" },
     });

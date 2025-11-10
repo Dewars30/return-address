@@ -32,3 +32,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Smoke tests
+        run: npm run smoke
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+

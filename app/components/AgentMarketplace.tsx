@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { type AgentSpec } from "@/lib/agentSpec";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 type AgentsWithIncludes = Awaited<
   ReturnType<
-    typeof db.agent.findMany<{
+    typeof prisma.agent.findMany<{
       include: {
         owner: { select: { handle: true; name: true } };
         specs: true;

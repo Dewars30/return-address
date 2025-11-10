@@ -70,7 +70,7 @@ Context:
 
 2. Ownership:
    - All creator-facing APIs must enforce:
-     - `agent.creatorId === currentUser.id`.
+     - `agent.ownerId === currentUser.id`.
 
 3. Visibility:
    - Public marketplace and runtime must:

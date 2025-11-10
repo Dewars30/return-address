@@ -3,7 +3,7 @@
  */
 
 import Stripe from "stripe";
-import { db } from "./db";
+import { prisma } from "./db";
 
 let stripeClient: Stripe | null = null;
 
@@ -29,7 +29,7 @@ export function getStripeClient(): Stripe {
  * Stores stripeAccountId on the User if created
  */
 export async function createConnectAccount(userId: string): Promise<string> {
-  const user = await db.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { stripeAccountId: true, email: true },
   });
@@ -56,7 +56,7 @@ export async function createConnectAccount(userId: string): Promise<string> {
   });
 
   // Store account ID
-  await db.user.update({
+  await prisma.user.update({
     where: { id: userId },
     data: { stripeAccountId: account.id },
   });
@@ -103,7 +103,7 @@ export async function createCheckoutSession(params: {
   const platformFeeBps = params.platformFeeBps || 500; // Default 5% platform fee
 
   // Get or create Stripe customer for user
-  const user = await db.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: params.userId },
     select: { email: true, stripeCustomerId: true },
   });
@@ -126,7 +126,7 @@ export async function createCheckoutSession(params: {
     customerId = customer.id;
 
     // Store customer ID
-    await db.user.update({
+    await prisma.user.update({
       where: { id: params.userId },
       data: { stripeCustomerId: customerId },
     });

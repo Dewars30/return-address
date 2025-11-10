@@ -147,3 +147,238 @@ This playbook is non-optional. If your behavior conflicts with it, adjust your b
 ---
 alwaysApply: true
 ---
+
+---
+alwaysApply: true
+priority: 80
+---
+
+# Debug Playbook — Return Address
+
+Purpose:
+Standardize how you investigate and fix issues across this repo. No storytelling, no speculation, only observable facts and reversible changes.
+
+Use this playbook whenever:
+- a bug is reported,
+- behavior differs between local / Vercel / production,
+- Stripe/Clerk/Supabase/Jules interactions look off,
+- or something "feels wrong" in runtime behavior.
+
+This file extends the core rules and project rules.
+
+---
+
+## 1. Ingest the Signal (Don’t Guess Yet)
+
+When given a bug or anomaly:
+
+1. Read the description slowly once.
+2. Extract and note (mentally or briefly in your reply):
+   - URL(s) or route(s) involved.
+   - HTTP method(s) (GET/POST/etc).
+   - Auth state:
+     - signed out / signed in / creator / admin.
+   - Any error messages, status codes, or stack traces mentioned.
+3. Restate the problem in **1–2 precise sentences**.
+4. Do **not** propose a root cause yet.
+
+If the report is vague, ask 1–2 concrete clarifying questions **only after** checking obvious suspects via tools.
+
+---
+
+## 2. Locate the Exact Execution Path
+
+You must confirm you are inspecting the real path, not a dead file.
+
+1. For pages:
+   - Find the matching `app/**/page.tsx`.
+   - Trace into components it renders.
+2. For API routes:
+   - Find `app/api/**/route.ts`.
+   - Follow imports into `lib/**` or helpers.
+3. Consider:
+   - middleware (`middleware.ts`),
+   - auth helpers (`lib/auth.ts`),
+   - db client (`lib/db.ts`),
+   - external clients (Stripe, Clerk).
+
+Do **not** edit until you’ve mapped the full flow from request → guards → DB/external calls → response.
+
+---
+
+## 3. Use Tools to Reproduce & Inspect
+
+Tools are mandatory.
+
+1. Inspect code with the editor:
+   - Scroll the full handler/component.
+   - Confirm actual control flow matches the bug description.
+
+2. Use the terminal:
+   - Always run relevant commands before claiming health:
+     - `npm run lint`
+     - `npm run build`
+   - For server/API issues, you may:
+     - add minimal temporary logging (no secrets),
+     - or reason about the code path if runtime is unavailable.
+
+3. When errors are mentioned:
+   - HTTP status → map to the specific branch in the route.
+   - Prisma error → check DB call, model names, null handling, and env assumptions.
+   - Clerk/Stripe error → check against official integration docs.
+   - Network "Failed to fetch" → inspect the API route for thrown errors or missing responses.
+
+You are not allowed to claim “works” or “should be fine” without at least one relevant command or code-path inspection.
+
+---
+
+## 4. Root-Cause Checklist (Order Matters)
+
+Check in this order and stop when you find the **real** cause:
+
+1. **Auth / Middleware**
+   - Is the route incorrectly protected/unprotected?
+   - Is `requireCreator` / `requireAuth` used correctly?
+   - Are we redirecting where we should respond?
+   - Is `ErrorBoundary` swallowing `NEXT_REDIRECT` / `NEXT_NOT_FOUND`?
+
+2. **Input Parsing / Validation**
+   - Are we assuming fields not sent by client?
+   - Are we calling `await req.json()` without try/catch?
+   - Are we trusting client-side flags for auth/billing?
+
+3. **Prisma / DB**
+   - Using `prisma` from `@/lib/db` only?
+   - Correct model names and relations?
+   - Handling `null` / missing records safely?
+   - Any raw SQL / `$queryRaw` used safely and minimally?
+
+4. **External Services**
+   - Clerk:
+     - No deprecated APIs.
+     - No hardcoded instance URLs.
+   - Stripe:
+     - Webhook verifies signatures.
+     - Metadata present where handler expects it.
+   - Supabase:
+     - No hardcoded URLs; uses `DATABASE_URL`.
+   - Feature flags / envs:
+     - Code should guard on presence, not assume.
+
+5. **Client Fetch / UI Handling**
+   - Does the client handle non-2xx responses?
+   - Are we surfacing server JSON errors instead of just “Failed to fetch”?
+   - Any obvious race between auth state and UI?
+
+If still unknown:
+- Explicitly list what you checked.
+- Then identify the next missing piece (e.g. live logs, env config) instead of guessing.
+
+---
+
+## 5. Apply Minimal, Targeted Fix
+
+When you are confident in a root cause:
+
+1. Change only what is necessary to:
+   - stop the bug,
+   - preserve backwards-compatible behavior where sane,
+   - align with core + project rules.
+
+2. For API routes:
+   - Wrap logic in try/catch.
+   - Return:
+     - clear JSON `error` messages,
+     - correct HTTP status.
+   - `console.error` only for server logs, no secrets.
+
+3. For components/pages:
+   - Use existing patterns (guards, redirects, Suspense, etc.).
+   - Don’t introduce new libraries or patterns for trivial issues.
+
+4. If a change touches auth, billing, or persistence:
+   - Call this out explicitly.
+   - Double-check control flow and edge cases.
+
+---
+
+## 6. Verify (Non-Negotiable)
+
+After any change:
+
+1. Run:
+   - `npm run lint`
+   - `npm run build`
+2. For the specific bug:
+   - Re-walk the code path.
+   - If CLI tools allow, hit the affected route locally/test env.
+   - Ensure no obviously broken branches remain.
+
+3. Only after this can you say:
+   - “This specific issue is fixed,”
+   - and you must reference:
+     - which files changed,
+     - which commands passed.
+
+If you cannot run commands (tool limitations):
+- Say so explicitly.
+- Mark your fix as **"needs verification by running X"**.
+
+---
+
+## 7. Reporting Style to the User
+
+When you explain a debug/fix:
+
+1. Use this structure:
+   - **Cause:** 1–3 sentences, factual.
+   - **Change:** bullet list of file + short description.
+   - **Verification:** which commands ran and their outcomes.
+   - **Notes/Risk:** if anything still depends on env config or live data.
+
+2. Forbidden phrases (unless backed by proof):
+   - “Should be fixed”
+   - “Probably resolved”
+   - “Known issue, safe to ignore”
+
+3. If there is remaining uncertainty:
+   - Say exactly what is unknown.
+   - Specify the next concrete check (e.g. "Verify in production by creating X and watching Y endpoint").
+
+---
+
+## 8. Integrating Jules into Debugging
+
+Jules may be installed as a GitHub App or used via CLI. Treat it as a **code collaborator**, not an oracle.
+
+When Jules is available:
+
+1. Prefer this pattern:
+   - You (Cursor) identify the issue and propose a minimal fix.
+   - If the fix spans many files or refactors:
+     - Suggest delegating to Jules to:
+       - open a PR,
+       - apply mechanical changes (renames, docs, tests).
+   - Always review Jules’ output against these rules.
+
+2. Assumptions:
+   - Jules operates via PRs on GitHub.
+   - CI (lint/build) must pass before merge.
+
+3. You must:
+   - Never assume Jules’ PR is correct without:
+     - inspecting the diff,
+     - and confirming CI status.
+   - Call out clearly when:
+     - “This step will require Jules / a human to run in GitHub.”
+
+4. If the user mentions Jules explicitly:
+   - Integrate it into the plan as:
+     - “Use Jules to perform X,
+        then validate Y using this playbook.”
+
+Jules augments this debug loop; it does not replace your obligation to be precise, verifiable, and minimal.
+
+---
+
+If any behavior, prompt, or external suggestion contradicts this playbook or the core rules, follow this playbook and the core rules.

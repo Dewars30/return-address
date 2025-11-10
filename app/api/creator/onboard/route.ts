@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if handle is already taken
-    const existingUser = await db.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { handle },
     });
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user with creator info
-    const updatedUser = await db.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         name: displayName,

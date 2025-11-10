@@ -2,18 +2,18 @@ import Link from "next/link";
 
 import { requireCreator } from "@/lib/auth";
 
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export default async function CreatorAgentsPage() {
   const user = await requireCreator();
 
   // Fetch Stripe connection + agents in parallel
   const [userWithStripe, agents] = await Promise.all([
-    db.user.findUnique({
+    prisma.user.findUnique({
       where: { id: user.id },
       select: { stripeAccountId: true },
     }),
-    db.agent.findMany({
+    prisma.agent.findMany({
       where: { ownerId: user.id },
       orderBy: { createdAt: "desc" },
     }),
