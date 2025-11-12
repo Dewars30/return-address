@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AgentCategory,
   BaseTone,
@@ -28,7 +29,8 @@ const CATEGORY_POLICIES: CategoryPolicy[] = ["default", "sensitive"];
 const PRICE_OPTIONS = [9, 19, 29, 49];
 
 export function NewAgentForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<AgentSpec>(createDefaultAgentSpec());
@@ -36,34 +38,41 @@ export function NewAgentForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
       // Validate AgentSpec
       if (!validateAgentSpec(formData)) {
-        throw new Error("Invalid agent specification");
+        setError("Invalid agent specification");
+        setLoading(false);
+        return;
       }
 
-      const response = await fetch("/api/creator/agents", {
+      const res = await fetch("/api/creator/agents", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec: formData }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create agent");
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError(data?.error || "Failed to create agent");
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
-      // Use window.location.href to force full page reload and ensure server gets fresh data
-      // This prevents ErrorBoundary from catching NEXT_REDIRECT errors during client-side navigation
-      window.location.href = `/creator/agents/${data.id}`;
+      if (!data?.id) {
+        setError("Unexpected response from server: missing agent id");
+        setLoading(false);
+        return;
+      }
+
+      router.push(`/creator/agents/${data.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setIsSubmitting(false);
+      console.error("Create agent failed", err);
+      setError("Unexpected error while creating agent");
+      setLoading(false);
     }
   };
 
@@ -449,18 +458,18 @@ export function NewAgentForm() {
       <div className="flex items-center justify-end space-x-4">
         <button
           type="button"
-          onClick={() => window.history.back()}
+          onClick={() => router.back()}
           className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-          disabled={isSubmitting}
+          disabled={loading}
         >
           Cancel
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={loading}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? "Creating..." : "Create Agent"}
+          {loading ? "Creating..." : "Create Agent"}
         </button>
       </div>
     </form>

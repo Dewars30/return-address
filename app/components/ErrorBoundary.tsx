@@ -11,26 +11,31 @@ type ErrorBoundaryProps = {
   children: React.ReactNode;
 };
 
-function isNextSpecialError(error: any): boolean {
-  // Check digest first (most reliable)
-  const digest = error?.digest;
+function isNextSpecialError(error: unknown): boolean {
+  const e = error as any;
+  const digest = e?.digest;
+  const message = e?.message || "";
+  const name = e?.name || "";
+
   if (typeof digest === "string") {
-    return (
-      digest.startsWith("NEXT_REDIRECT") ||
-      digest.startsWith("NEXT_NOT_FOUND")
-    );
+    if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND")) {
+      return true;
+    }
   }
 
-  // Also check error message and name as fallback
-  const message = error?.message || "";
-  const name = error?.name || "";
+  // Fallback: if Next encodes it differently or minifies
+  if (
+    typeof message === "string" &&
+    (message.includes("NEXT_REDIRECT") || message.includes("NEXT_NOT_FOUND"))
+  ) {
+    return true;
+  }
 
-  return (
-    message.includes("NEXT_REDIRECT") ||
-    message.includes("NEXT_NOT_FOUND") ||
-    name === "NEXT_REDIRECT" ||
-    name === "NEXT_NOT_FOUND"
-  );
+  if (name === "NEXT_REDIRECT" || name === "NEXT_NOT_FOUND") {
+    return true;
+  }
+
+  return false;
 }
 
 function isClerkError(error: any): boolean {
@@ -55,11 +60,8 @@ export class ErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Don't catch Next.js redirect/not-found errors - let them bubble up
-    // Returning { hasError: false } prevents ErrorBoundary from catching it
     if (isNextSpecialError(error)) {
-      // Re-throw by returning false state - Next.js will handle the redirect
-      return { hasError: false };
+      return { hasError: false, error: undefined };
     }
     // Don't catch Clerk component errors - they handle their own errors
     if (isClerkError(error)) {
@@ -78,14 +80,15 @@ export class ErrorBoundary extends React.Component<
   }
 
   render() {
-    // Never render error UI for Next.js special errors
-    if (this.state.hasError && this.state.error && !isNextSpecialError(this.state.error)) {
+    const { hasError, error } = this.state;
+
+    if (hasError && error && !isNextSpecialError(error)) {
       return (
-        <div className="w-full border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <div className="font-semibold">Something went wrong.</div>
-          <div className="mt-1 break-all">
-            {this.state.error.message || "An unexpected error occurred."}
-          </div>
+        <div className="mx-auto max-w-2xl py-16">
+          <h1 className="text-2xl font-semibold mb-4">Something went wrong.</h1>
+          <p className="text-sm text-gray-500">
+            {error.message || "An unexpected error occurred."}
+          </p>
         </div>
       );
     }
