@@ -20,11 +20,12 @@ export const db = prisma;
 /**
  * Test database connection
  * Returns true if connection is successful, false otherwise
- * Uses $queryRawUnsafe to avoid prepared statements (works with connection poolers)
+ * With pgbouncer=true in DATABASE_URL, prepared statements are disabled at connection level,
+ * so standard $queryRaw works correctly with connection poolers.
  */
 export async function testDatabaseConnection(): Promise<boolean> {
   try {
-    await prisma.$queryRawUnsafe("SELECT 1");
+    await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch (error) {
     console.error("Database connection failed:", error);

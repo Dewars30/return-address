@@ -6,7 +6,8 @@ import { logError, logInfo } from "@/lib/log";
  * Health check endpoint to test database connection
  * GET /api/health/db
  *
- * Uses $queryRawUnsafe to avoid prepared statement conflicts during Next.js static generation.
+ * With pgbouncer=true in DATABASE_URL, prepared statements are disabled at connection level,
+ * so standard $queryRaw works correctly with connection poolers.
  * This route must be dynamic (not statically generated) since it tests a live DB connection.
  */
 export const dynamic = "force-dynamic";
@@ -14,9 +15,9 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     // Test database connection
-    // Use $queryRawUnsafe to avoid prepared statement conflicts with connection poolers
-    // and during Next.js static generation
-    await prisma.$queryRawUnsafe("SELECT 1");
+    // With pgbouncer=true in DATABASE_URL, prepared statements are disabled at connection level
+    // So we can use standard $queryRaw (or keep $queryRawUnsafe - both work)
+    await prisma.$queryRaw`SELECT 1`;
 
     logInfo({ route: "/api/health/db", statusCode: 200 }, "Database health check passed");
 
