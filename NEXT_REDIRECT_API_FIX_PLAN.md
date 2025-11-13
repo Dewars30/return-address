@@ -1,7 +1,7 @@
 # NEXT_REDIRECT API Route Fix Plan
 
-**Date:** 2025-01-XX  
-**Status:** 🔴 Critical Issue Identified  
+**Date:** 2025-01-XX
+**Status:** 🔴 Critical Issue Identified
 **Error:** `NEXT_REDIRECT` error in API routes (status 500)
 
 ---
@@ -261,7 +261,7 @@ export async function requireCreatorApi() {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireCreatorApi();
-    
+
     // ... rest of handler
   } catch (error) {
     if (error instanceof Error) {
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    
+
     // ... other error handling
   }
 }
