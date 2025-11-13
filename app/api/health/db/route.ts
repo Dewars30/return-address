@@ -6,8 +6,8 @@ import { logError, logInfo } from "@/lib/log";
  * Health check endpoint to test database connection
  * GET /api/health/db
  *
- * With pgbouncer=true in DATABASE_URL, prepared statements are disabled at connection level,
- * so standard $queryRaw works correctly with connection poolers.
+ * With PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true, prepared statements are disabled globally,
+ * so all Prisma queries work correctly with connection poolers (PgBouncer/Supavisor).
  * This route must be dynamic (not statically generated) since it tests a live DB connection.
  */
 export const dynamic = "force-dynamic";
@@ -15,9 +15,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     // Test database connection
-    // With pgbouncer=true in DATABASE_URL, prepared statements are disabled at connection level
-    // So we can use standard $queryRaw (or keep $queryRawUnsafe - both work)
-    await prisma.$queryRaw`SELECT 1`;
+    // With PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true, prepared statements are disabled globally
+    await prisma.$queryRawUnsafe("SELECT 1");
 
     logInfo({ route: "/api/health/db", statusCode: 200 }, "Database health check passed");
 

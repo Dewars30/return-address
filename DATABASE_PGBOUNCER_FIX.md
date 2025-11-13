@@ -25,9 +25,9 @@
 
 ## Solution
 
-**Fix:** Add `pgbouncer=true` to `DATABASE_URL` connection string.
+**Fix:** Set `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true` environment variable.
 
-This tells Prisma to disable prepared statements for the pooled connection, which is compatible with connection poolers.
+This tells Prisma to disable prepared statements globally for all queries, which is compatible with connection poolers.
 
 ---
 
@@ -35,48 +35,30 @@ This tells Prisma to disable prepared statements for the pooled connection, whic
 
 ### Step 1: Update Local `.env` File
 
-**Current format (may or may not have query params):**
+**Add this environment variable:**
 ```bash
-# Example 1 - no query params
+PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true
+```
+
+**Keep your existing DATABASE_URL and DIRECT_URL unchanged:**
+```bash
+# DATABASE_URL - pooled connection (port 6543)
 DATABASE_URL="postgresql://user:pass@host:6543/dbname"
 
-# Example 2 - has params
-DATABASE_URL="postgresql://user:pass@host:6543/dbname?sslmode=require"
+# DIRECT_URL - direct connection (port 5432)
+DIRECT_URL="postgresql://user:pass@host:5432/dbname"
 ```
 
-**Updated format (add `pgbouncer=true`):**
-```bash
-# If no params exist
-DATABASE_URL="postgresql://user:pass@host:6543/dbname?pgbouncer=true"
-
-# If params already exist
-DATABASE_URL="postgresql://user:pass@host:6543/dbname?sslmode=require&pgbouncer=true"
-```
-
-**Keep DIRECT_URL as direct connection (no pgbouncer=true):**
-```bash
-# DIRECT_URL should NOT have pgbouncer=true
-DIRECT_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
-```
-
-**Pattern:**
-- `DATABASE_URL` → Pooled connection (port 6543) **with** `pgbouncer=true`
-- `DIRECT_URL` → Direct connection (port 5432) **without** `pgbouncer=true`
+**No need to modify connection strings** - the env var disables prepared statements globally.
 
 ---
 
-### Step 2: Regenerate Prisma Client
+### Step 2: Restart Local Dev
 
 After updating `.env`:
 
 ```bash
-# 1. Ensure env is loaded
-export $(grep -v '^#' .env | xargs)  # or rely on next dev reading .env
-
-# 2. Generate Prisma client
-npx prisma generate
-
-# 3. Run dev
+# Restart dev server (picks up new env var)
 npm run dev
 ```
 
@@ -92,31 +74,14 @@ npm run dev
 
 1. Go to: **Vercel Dashboard** → **Your Project** → **Settings** → **Environment Variables**
 
-2. **Edit `DATABASE_URL`:**
-   - Find `DATABASE_URL`
-   - Add `pgbouncer=true` as query param:
-     - If no params: `?pgbouncer=true`
-     - If has params: `&pgbouncer=true`
-   - Example:
-     ```
-     Before: postgresql://user:pass@host:6543/dbname
-     After:  postgresql://user:pass@host:6543/dbname?pgbouncer=true
-     ```
+2. **Add new variable:**
+   - Name: `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS`
+   - Value: `true`
+   - Apply to: Production, Preview, Development (all environments)
 
-3. **Verify `DIRECT_URL`:**
-   - Should **NOT** have `pgbouncer=true`
-   - Should use direct connection (port 5432)
-   - Example:
-     ```
-     DIRECT_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
-     ```
+3. **No need to modify DATABASE_URL or DIRECT_URL** - they stay as-is
 
-4. **Apply to all environments:**
-   - Production
-   - Preview
-   - Development (if used)
-
-5. **Redeploy:**
+4. **Redeploy:**
    - Vercel will auto-redeploy after env var changes
    - Or trigger manual redeploy
 
@@ -148,83 +113,61 @@ npm run dev
 3. Next request: Prisma tries `PREPARE s5 AS ...` again
 4. Postgres: "s5 already exists" → `42P05` error
 
-**After (with `pgbouncer=true`):**
-1. Prisma: Disables prepared statements
+**After (with `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true`):**
+1. Prisma: Disables prepared statements globally for all queries
 2. Uses regular queries instead
 3. Connection pooler: Works correctly
 4. No `42P05` errors
 
 ---
 
-## Connection String Examples
+## Environment Variable Setup
 
-### Supabase Connection Pooler
+### Local `.env` File
 
-**DATABASE_URL (with pgbouncer=true):**
-```
-postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true
-```
+```bash
+# Database connections (unchanged)
+DATABASE_URL="postgresql://user:pass@host:6543/dbname"
+DIRECT_URL="postgresql://user:pass@host:5432/dbname"
 
-**DIRECT_URL (no pgbouncer=true):**
-```
-postgresql://postgres.[project-ref]:[password]@db.[project-ref].supabase.co:5432/postgres
-```
-
-### Neon Connection Pooler
-
-**DATABASE_URL (with pgbouncer=true):**
-```
-postgresql://user:pass@[project].pooler.neon.tech:5432/dbname?pgbouncer=true
+# Disable prepared statements globally
+PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true
 ```
 
-**DIRECT_URL (no pgbouncer=true):**
+### Vercel Environment Variables
+
+Add this variable to all environments (Production, Preview, Development):
+
 ```
-postgresql://user:pass@[project].neon.tech:5432/dbname
+PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true
 ```
+
+**No need to modify DATABASE_URL or DIRECT_URL** - they stay as-is.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Updated local `.env` with `pgbouncer=true` in `DATABASE_URL`
-- [ ] Verified `DIRECT_URL` does NOT have `pgbouncer=true`
-- [ ] Regenerated Prisma client (`npx prisma generate`)
-- [ ] Tested locally (`npm run dev`)
-- [ ] Health check works (`/api/health/db`)
-- [ ] Agent creation works locally
-- [ ] Updated Vercel `DATABASE_URL` with `pgbouncer=true`
-- [ ] Verified Vercel `DIRECT_URL` does NOT have `pgbouncer=true`
+- [ ] Added `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true` to local `.env`
+- [ ] Restarted local dev (`npm run dev`)
+- [ ] Health check works locally (`/api/health/db`)
+- [ ] Agent creation works locally (no 42P05 error)
+- [ ] Added `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true` to Vercel env vars
+- [ ] Applied to all environments (Production, Preview, Development)
 - [ ] Redeployed on Vercel
 - [ ] Tested production health check
 - [ ] Tested production agent creation
 
 ---
 
-## Optional: Simplify Health Check
-
-Once `pgbouncer=true` is in place, you can simplify the health check:
-
-**Current (works but verbose):**
-```typescript
-await prisma.$queryRawUnsafe("SELECT 1");
-```
-
-**Simplified (also works):**
-```typescript
-await prisma.$queryRaw`SELECT 1`;
-```
-
-Both work because prepared statements are disabled at the connection level, not per-query.
-
----
-
 ## Summary
 
-**Fix:** Add `pgbouncer=true` to `DATABASE_URL` connection string.
+**Fix:** Set `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true` environment variable.
 
-**Pattern:**
-- `DATABASE_URL` → Pooled (port 6543) **with** `pgbouncer=true`
-- `DIRECT_URL` → Direct (port 5432) **without** `pgbouncer=true`
+**What it does:**
+- Disables prepared statements globally for all Prisma queries
+- Compatible with connection poolers (PgBouncer/Supavisor)
+- No need to modify connection strings
 
 **Result:**
 - ✅ No more `42P05` errors
@@ -233,6 +176,6 @@ Both work because prepared statements are disabled at the connection level, not 
 
 ---
 
-**Status:** Ready for Implementation  
+**Status:** Ready for Implementation
 **Priority:** 🔴 Critical - Blocks agent creation
 

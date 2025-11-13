@@ -1,4 +1,4 @@
-# Quick Environment Variable Update — pgbouncer=true
+# Quick Environment Variable Update — Disable Prepared Statements
 
 **Purpose:** Fix `42P05: prepared statement "s5" already exists` error
 
@@ -8,39 +8,23 @@
 
 ### Local `.env` File
 
-**Find this line:**
+**Add this line:**
 ```bash
-DATABASE_URL="postgresql://..."
+PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS=true
 ```
 
-**Add `pgbouncer=true` as query param:**
-
-**If no params exist:**
-```bash
-DATABASE_URL="postgresql://user:pass@host:6543/dbname?pgbouncer=true"
-```
-
-**If params already exist:**
-```bash
-DATABASE_URL="postgresql://user:pass@host:6543/dbname?sslmode=require&pgbouncer=true"
-```
-
-**Keep DIRECT_URL unchanged (no pgbouncer=true):**
-```bash
-DIRECT_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
-```
+**Keep DATABASE_URL and DIRECT_URL unchanged** - no need to modify them.
 
 ### Vercel Environment Variables
 
 1. Go to: **Vercel Dashboard** → **Your Project** → **Settings** → **Environment Variables**
 
-2. **Edit `DATABASE_URL`:**
-   - Add `?pgbouncer=true` (if no params) or `&pgbouncer=true` (if has params)
-   - Apply to: Production, Preview, Development
+2. **Add new variable:**
+   - Name: `PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS`
+   - Value: `true`
+   - Apply to: Production, Preview, Development (all environments)
 
-3. **Verify `DIRECT_URL`:**
-   - Should NOT have `pgbouncer=true`
-   - Should use port 5432 (direct connection)
+3. **No need to modify DATABASE_URL or DIRECT_URL** - they stay as-is
 
 4. **Redeploy** (auto or manual)
 
