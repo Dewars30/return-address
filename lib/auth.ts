@@ -61,24 +61,24 @@ export async function requireAuth() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      // Redirect to /sign-in - middleware should have handled auth, but if we get here,
-      // redirect to sign-in page
-      redirect("/sign-in");
+      // We don't have a /sign-in route; we use Clerk modal.
+      // Redirect to home and let Clerk handle sign-in.
+      redirect("/");
     }
 
     const user = await getCurrentUser();
     if (!user) {
       // If userId exists but getCurrentUser() fails, it's likely a database error
-      // Log it and redirect to sign-in
+      // Log it and redirect to home
       console.error("getCurrentUser() returned null despite userId existing");
-      redirect("/sign-in");
+      redirect("/");
     }
     return user;
   } catch (error) {
-    // Log the error and redirect to sign-in
+    // Log the error and redirect to home
     console.error("requireAuth() error:", error);
-    // Redirect to sign-in - middleware should have handled auth
-    redirect("/sign-in");
+    // Redirect to home - middleware should have handled auth, but if we get here, send them home
+    redirect("/");
   }
 }
 

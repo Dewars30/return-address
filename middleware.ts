@@ -39,10 +39,11 @@ export default clerkMiddleware((auth, req) => {
   const { userId } = auth();
 
   if (!userId) {
-    // Redirect to /sign-in on primary domain (not accounts.returnaddress.io)
-    const signInUrl = new URL("/sign-in", req.url);
-    signInUrl.searchParams.set("redirect_url", req.url);
-    return NextResponse.redirect(signInUrl);
+    // We don't have a /sign-in route; we use Clerk modal.
+    // Send them home, and preserve where they wanted to go.
+    const url = new URL("/", req.url);
+    url.searchParams.set("next", req.nextUrl.pathname + req.nextUrl.search);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
