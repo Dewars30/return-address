@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuthApi } from "@/lib/auth";
 
-// This route uses requireAuth() which uses auth, so it must be dynamic
+// This route uses requireAuthApi() which uses auth, so it must be dynamic
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const user = await requireAuth(); // must return the DB-backed user with id
+  // Use API-safe version that throws errors instead of redirecting
+  let user;
+  try {
+    user = await requireAuthApi();
+  } catch (authError) {
+    if (authError instanceof Error) {
+      if (authError.message === "UNAUTHORIZED" || authError.message === "AUTH_FAILED") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+    throw authError;
+  }
 
   try {
     const body = await req.json();
