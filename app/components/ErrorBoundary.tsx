@@ -76,6 +76,21 @@ export class ErrorBoundary extends React.Component<
       // Don't log Next.js redirect errors - they're expected
       return;
     }
+
+    // Enhanced logging for real errors
+    console.error("[ERROR_BOUNDARY] Caught error:", {
+      error: {
+        name: error?.name,
+        message: error?.message,
+        digest: error?.digest,
+        stack: error?.stack,
+      },
+      errorInfo: {
+        componentStack: errorInfo?.componentStack,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
     console.error("ErrorBoundary caught error:", error, errorInfo);
   }
 

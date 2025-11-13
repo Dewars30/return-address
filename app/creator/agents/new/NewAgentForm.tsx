@@ -48,6 +48,12 @@ export function NewAgentForm() {
         return;
       }
 
+      console.log("[CREATE_AGENT] Submitting agent creation:", {
+        agentName: formData.profile.name,
+        category: formData.profile.category,
+        timestamp: new Date().toISOString(),
+      });
+
       const res = await fetch("/api/creator/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +62,19 @@ export function NewAgentForm() {
 
       const data = await res.json().catch(() => null);
 
+      console.log("[CREATE_AGENT] API response:", {
+        status: res.status,
+        ok: res.ok,
+        hasData: !!data,
+        timestamp: new Date().toISOString(),
+      });
+
       if (!res.ok) {
+        console.error("[CREATE_AGENT] API error:", {
+          status: res.status,
+          error: data?.error || "Unknown error",
+          timestamp: new Date().toISOString(),
+        });
         setError(data?.error || "Failed to create agent");
         setLoading(false);
         return;
@@ -68,9 +86,22 @@ export function NewAgentForm() {
         return;
       }
 
-      router.push(`/creator/agents/${data.id}`);
+      // Log successful creation
+      console.log("[CREATE_AGENT] Agent created:", {
+        agentId: data.id,
+        slug: data.slug,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Use window.location.href to force full page reload and ensure server gets fresh data
+      // This prevents race conditions where router.push() navigates before DB update commits
+      // and avoids NEXT_REDIRECT errors being caught by ErrorBoundary
+      window.location.href = `/creator/agents/${data.id}`;
     } catch (err) {
-      console.error("Create agent failed", err);
+      console.error("[CREATE_AGENT] Error:", {
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      });
       setError("Unexpected error while creating agent");
       setLoading(false);
     }

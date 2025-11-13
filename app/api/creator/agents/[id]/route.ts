@@ -14,6 +14,13 @@ export async function GET(
     const user = await requireCreator();
     const agentId = params.id;
 
+    console.log("[GET_AGENT] Request:", {
+      agentId,
+      userId: user.id,
+      isCreator: user.isCreator,
+      timestamp: new Date().toISOString(),
+    });
+
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       include: {
@@ -26,11 +33,22 @@ export async function GET(
     });
 
     if (!agent) {
+      console.warn("[GET_AGENT] Agent not found:", {
+        agentId,
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+      });
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
     // Ensure user owns this agent
     if (agent.ownerId !== user.id) {
+      console.warn("[GET_AGENT] Unauthorized access attempt:", {
+        agentId,
+        agentOwnerId: agent.ownerId,
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -42,13 +60,25 @@ export async function GET(
 
     const spec = agent.specs[0]?.spec as AgentSpec | null;
 
+    console.log("[GET_AGENT] Success:", {
+      agentId,
+      userId: user.id,
+      hasSpec: !!spec,
+      hasStripeAccount: !!userWithStripe?.stripeAccountId,
+      timestamp: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       agent,
       spec,
       hasStripeAccount: !!userWithStripe?.stripeAccountId,
     });
   } catch (error) {
-    console.error("Get agent error:", error);
+    console.error("[GET_AGENT] Error:", {
+      agentId: params.id,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }

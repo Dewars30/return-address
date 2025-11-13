@@ -46,15 +46,41 @@ export default function EditAgentPage() {
   useEffect(() => {
     async function loadAgent() {
       try {
+        console.log("[LOAD_AGENT] Loading agent:", {
+          agentId,
+          timestamp: new Date().toISOString(),
+        });
+
         const response = await fetch(`/api/creator/agents/${agentId}`);
+
+        console.log("[LOAD_AGENT] Response:", {
+          status: response.status,
+          ok: response.ok,
+          timestamp: new Date().toISOString(),
+        });
+
         if (!response.ok) {
           throw new Error("Failed to load agent");
         }
         const data = await response.json();
+
+        console.log("[LOAD_AGENT] Success:", {
+          agentId,
+          hasAgent: !!data.agent,
+          hasSpec: !!data.spec,
+          hasStripeAccount: data.hasStripeAccount,
+          timestamp: new Date().toISOString(),
+        });
+
         setAgent(data.agent);
         setHasStripeAccount(data.hasStripeAccount);
         setFormData(data.spec as AgentSpec);
       } catch (err) {
+        console.error("[LOAD_AGENT] Error:", {
+          error: err instanceof Error ? err.message : String(err),
+          agentId,
+          timestamp: new Date().toISOString(),
+        });
         setError(err instanceof Error ? err.message : "Failed to load agent");
       } finally {
         setIsLoading(false);
