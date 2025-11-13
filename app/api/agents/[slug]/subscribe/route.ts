@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireAuthApi } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createCheckoutSession } from "@/lib/stripe";
 import { type AgentSpec } from "@/lib/agentSpec";
 
-// This route uses requireAuth() which uses auth, so it must be dynamic
+// This route uses requireAuthApi() which uses auth, so it must be dynamic
 export const dynamic = "force-dynamic";
 
 export async function POST(
@@ -12,7 +12,18 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const user = await requireAuth();
+    // Use API-safe version that throws errors instead of redirecting
+    let user;
+    try {
+      user = await requireAuthApi();
+    } catch (authError) {
+      if (authError instanceof Error) {
+        if (authError.message === "UNAUTHORIZED" || authError.message === "AUTH_FAILED") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
+      throw authError;
+    }
     const slug = params.slug;
 
     // Load agent with active spec and creator (exclude suspended)

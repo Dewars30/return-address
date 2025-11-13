@@ -11,6 +11,8 @@
 
 The Return Address CI pipeline is **fully operational** with all checks passing. The workflow is minimal, focused, and properly configured with required secrets. Jules integration is **optional** and operates as a code collaborator via GitHub PRs, not a hard dependency.
 
+**⚠️ Important:** CI verifies build integrity (lint, build, Prisma generation). It does **not** verify runtime correctness (auth flows, external integrations, browser behavior). See `RUNTIME_DEBUG_PLAN.md` for runtime issue tracking.
+
 **Current Status:**
 - ✅ CI workflow exists and is properly configured
 - ✅ Workflow hardened with optional env vars (STRIPE_WEBHOOK_SECRET, OPENAI_API_KEY)
@@ -21,6 +23,8 @@ The Return Address CI pipeline is **fully operational** with all checks passing.
 - ✅ Verified per guidance: Structure matches recommendations exactly
 
 **Latest Verification:** See `CI_VERIFICATION_REPORT.md` for comprehensive verification results.
+
+**Runtime Issues:** See `RUNTIME_DEBUG_PLAN.md` for runtime debugging and fixes (not CI-related).
 
 ---
 

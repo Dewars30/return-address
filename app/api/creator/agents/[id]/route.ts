@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireCreator } from "@/lib/auth";
+import { requireCreatorApi } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateAgentSpec, type AgentSpec } from "@/lib/agentSpec";
 
@@ -11,7 +11,24 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireCreator();
+    // Use API-safe version that throws errors instead of redirecting
+    let user;
+    try {
+      user = await requireCreatorApi();
+    } catch (authError) {
+      if (authError instanceof Error) {
+        if (authError.message === "UNAUTHORIZED" || authError.message === "AUTH_FAILED") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (authError.message === "CREATOR_REQUIRED") {
+          return NextResponse.json(
+            { error: "Creator access required. Please complete onboarding." },
+            { status: 403 }
+          );
+        }
+      }
+      throw authError;
+    }
     const agentId = params.id;
 
     console.log("[GET_AGENT] Request:", {
@@ -91,7 +108,24 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireCreator();
+    // Use API-safe version that throws errors instead of redirecting
+    let user;
+    try {
+      user = await requireCreatorApi();
+    } catch (authError) {
+      if (authError instanceof Error) {
+        if (authError.message === "UNAUTHORIZED" || authError.message === "AUTH_FAILED") {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (authError.message === "CREATOR_REQUIRED") {
+          return NextResponse.json(
+            { error: "Creator access required. Please complete onboarding." },
+            { status: 403 }
+          );
+        }
+      }
+      throw authError;
+    }
     const agentId = params.id;
     const body = await request.json();
     const { spec } = body;

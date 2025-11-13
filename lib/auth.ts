@@ -105,3 +105,45 @@ export async function requireAdmin() {
   }
   return user;
 }
+
+/**
+ * Require authentication for API routes - throws error instead of redirecting
+ * Use this in API routes instead of requireAuth()
+ * Throws errors that can be caught and converted to JSON responses
+ */
+export async function requireAuthApi() {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+      console.error("getCurrentUser() returned null despite userId existing");
+      throw new Error("AUTH_FAILED");
+    }
+    return user;
+  } catch (error) {
+    // Re-throw our custom errors
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "AUTH_FAILED")) {
+      throw error;
+    }
+    // Log unexpected errors and throw generic error
+    console.error("requireAuthApi() error:", error);
+    throw new Error("AUTH_FAILED");
+  }
+}
+
+/**
+ * Require creator status for API routes - throws error instead of redirecting
+ * Use this in API routes instead of requireCreator()
+ * Throws errors that can be caught and converted to JSON responses
+ */
+export async function requireCreatorApi() {
+  const user = await requireAuthApi();
+  if (!user.isCreator) {
+    throw new Error("CREATOR_REQUIRED");
+  }
+  return user;
+}

@@ -95,6 +95,7 @@ Return Address is a monolithic web application built with Next.js, TypeScript, P
 - **[CI_STATUS_REPORT.md](./CI_STATUS_REPORT.md)** — CI setup and status report
 - **[CI_VERIFICATION_REPORT.md](./CI_VERIFICATION_REPORT.md)** — Comprehensive CI verification results
 - **[CI_SETUP_SUMMARY.md](./CI_SETUP_SUMMARY.md)** — Quick CI setup reference
+- **[RUNTIME_DEBUG_PLAN.md](./RUNTIME_DEBUG_PLAN.md)** — Runtime issue debugging and fixes (not CI-related)
 
 ## Development
 
