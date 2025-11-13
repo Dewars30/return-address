@@ -16,7 +16,7 @@ const nextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://clerk.returnaddress.io https://*.clerk.services",
               "frame-src 'self' https://clerk.returnaddress.io https://*.clerk.services",
-              "worker-src 'self' blob:",
+              "worker-src 'self' blob: https://clerk.returnaddress.io",
             ].join('; '),
           },
         ],

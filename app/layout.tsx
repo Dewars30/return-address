@@ -9,6 +9,7 @@ import "./globals.css";
 import Nav from "./components/Nav";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { CSPViolationLogger } from "./components/CSPViolationLogger";
 
 // Import env check to validate environment variables on startup
 import "@/lib/env";
@@ -37,6 +38,7 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className={inter.className}>
+          <CSPViolationLogger />
           <ErrorBoundary>
             <Nav />
             {children}
