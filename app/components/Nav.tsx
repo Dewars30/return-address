@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Nav() {
-  const { isSignedIn } = useUser();
-
   return (
     <nav className="border-b border-gray-200 bg-white">
       <div className="container mx-auto px-4">
@@ -20,23 +18,34 @@ export default function Nav() {
             >
               Marketplace
             </Link>
-            {isSignedIn ? (
-              <>
-                <Link
-                  href="/creator/agents"
+            <SignedIn>
+              <Link
+                href="/creator/agents"
+                className="text-gray-700 hover:text-gray-900 transition-colors"
+              >
+                Creator dashboard
+              </Link>
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button
+                  type="button"
                   className="text-gray-700 hover:text-gray-900 transition-colors"
                 >
                   Creator dashboard
-                </Link>
-                <UserButton afterSignOutUrl="/" />
-              </>
-            ) : (
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
+            <SignedOut>
               <SignInButton mode="modal">
                 <button className="text-gray-700 hover:text-gray-900 transition-colors">
                   Sign in
                 </button>
               </SignInButton>
-            )}
+            </SignedOut>
           </div>
         </div>
       </div>
