@@ -10,17 +10,25 @@ import { prisma } from "./db";
 export async function getCurrentUser() {
   try {
     const { userId } = await auth();
+    console.log("[GET_USER] Step 1 - Clerk auth():", { userId: userId ? "present" : "null" });
     if (!userId) return null;
 
     const clerkUser = await currentUser();
+    console.log("[GET_USER] Step 2 - Clerk currentUser():", {
+      email: clerkUser?.emailAddresses[0]?.emailAddress,
+      hasUser: !!clerkUser
+    });
     if (!clerkUser) return null;
 
     // Sync user to database (preserve existing fields like stripeCustomerId)
+    console.log("[GET_USER] Step 3 - Finding existing user in DB");
     const existingUser = await prisma.user.findUnique({
       where: { authId: userId },
       select: { stripeCustomerId: true, isCreator: true, stripeAccountId: true },
     });
+    console.log("[GET_USER] Step 3 result:", { found: !!existingUser });
 
+    console.log("[GET_USER] Step 4 - Upserting user to DB");
     const user = await prisma.user.upsert({
       where: { authId: userId },
       update: {
@@ -43,9 +51,18 @@ export async function getCurrentUser() {
         isCreator: false,
       },
     });
+    console.log("[GET_USER] Step 4 result - User upserted successfully:", { userId: user.id });
 
     return user;
   } catch (error) {
+    // DIAGNOSTIC: Log the actual error being caught
+    console.error("[GET_USER] ERROR CAUGHT:", {
+      error: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : "unknown",
+      code: (error as any)?.code,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     // Clerk middleware not initialized (e.g., static files, 404s, or middleware matcher excludes route)
     // Return null to gracefully handle unauthenticated state
     return null;
